@@ -30,6 +30,7 @@ class SetupHerdEnvironment extends Command
 
         $this->ensurePassportKeys();
         $this->ensurePassportPersonalClient();
+        $this->ensureSeedData();
 
         $this->newLine();
         $this->info('Herd setup is complete.');
@@ -225,6 +226,33 @@ class SetupHerdEnvironment extends Command
         } catch (Throwable $exception) {
             if ($this->isMySqlConnectionRefused($exception)) {
                 $this->warn('• Skipping Passport personal client creation because MySQL is unreachable.');
+                return;
+            }
+
+            throw $exception;
+        }
+    }
+
+    private function ensureSeedData(): void
+    {
+        try {
+            if (!Schema::hasTable('users')) {
+                $this->warn('• Users table not found yet. Run migrations first to seed demo accounts.');
+                return;
+            }
+
+            $hasAdminSeedUser = DB::table('users')->where('email', 'admin@example.com')->exists();
+            $hasStandardSeedUser = DB::table('users')->where('email', 'user@example.com')->exists();
+
+            if ($hasAdminSeedUser || $hasStandardSeedUser) {
+                $this->line('• Seed data already present (admin/user test accounts detected)');
+                return;
+            }
+
+            $this->call('db:seed', ['--force' => true]);
+        } catch (Throwable $exception) {
+            if ($this->isMySqlConnectionRefused($exception)) {
+                $this->warn('• Skipping database seeding because MySQL is unreachable.');
                 return;
             }
 

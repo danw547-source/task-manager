@@ -56,6 +56,8 @@ See routes/api.php for the canonical endpoint map.
 
 This project includes an idempotent Herd bootstrap command so reviewers can get running fast.
 
+The local setup flow is intended to work on both Windows and macOS.
+
 ### 1) Clone and enter project
 
 - Place the repo inside your Herd projects directory (for example `C:/Users/<you>/Herd/task-manager`).
@@ -77,6 +79,7 @@ What this does automatically:
 - runs migrations (auto-falls back to SQLite if MySQL is unavailable)
 - creates Passport keys if missing
 - creates a Passport personal access client if missing (non-interactive)
+- seeds demo/test data when default test accounts are not present
 - creates the storage symlink if missing
 
 By default, local setup uses SQLite (`DB_CONNECTION=sqlite`) so MySQL is optional for first run.
@@ -94,6 +97,27 @@ Optional one-liner for steps 2 + 3 + 4:
 - composer run herd:setup:all
 
 If your Node/OpenSSL setup is strict, npm --prefix frontend run build is also supported.
+
+## Test accounts (seeded)
+
+`composer run herd:setup` now seeds these accounts automatically on first setup (or whenever they are not present).
+
+If you need to re-seed manually:
+
+- php artisan db:seed
+
+Default seeded accounts:
+
+- Admin account
+  - email: admin@example.com
+  - password: admin
+  - role: admin
+- Standard user account
+  - email: user@example.com
+  - password: user
+  - role: user
+
+These accounts are defined in `database/seeders/DatabaseSeeder.php`.
 
 ## Pre-share checklist
 
@@ -123,6 +147,7 @@ Expected outcome:
 
 As of February 26, 2026:
 
+- Local setup flow (`composer run herd:setup`) is intended to work on both Windows and macOS.
 - Backend tests pass via `composer run test`.
 - Frontend production build succeeds via `npm --prefix frontend run build`.
 - Frontend build currently reports non-blocking warnings from legacy dashboard Sass usage and bundle-size hints.
