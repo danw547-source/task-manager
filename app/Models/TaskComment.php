@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+/**
+ * Stores threaded comments attached to tasks.
+ * Relationships model the parent/reply tree and receipt lookups.
+ */
+class TaskComment extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'task_id',
+        'user_id',
+        'parent_comment_id',
+        'body',
+    ];
+
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function parentComment(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_comment_id');
+    }
+
+    public function replies(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_comment_id')->orderBy('id');
+    }
+
+    public function receipts(): HasMany
+    {
+        return $this->hasMany(TaskCommentReceipt::class);
+    }
+}
