@@ -244,7 +244,7 @@ class SetupHerdEnvironment extends Command
             $hasAdminSeedUser = DB::table('users')->where('email', 'admin@example.com')->exists();
             $hasStandardSeedUser = DB::table('users')->where('email', 'user@example.com')->exists();
 
-            if ($hasAdminSeedUser || $hasStandardSeedUser) {
+            if ($hasAdminSeedUser && $hasStandardSeedUser) {
                 $this->line('• Seed data already present (admin/user test accounts detected)');
                 return;
             }

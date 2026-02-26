@@ -93,6 +93,13 @@ By default, local setup uses SQLite (`DB_CONNECTION=sqlite`) so MySQL is optiona
 - Backend API: php artisan serve
 - Frontend: npm --prefix frontend run dev
 
+If you see `{"message":"Frontend build assets are not available yet. Run npm --prefix frontend run build."}` in the browser, run:
+
+- npm --prefix frontend install
+- npm --prefix frontend run build
+
+Then refresh the page.
+
 Optional one-liner for steps 2 + 3 + 4:
 - composer run herd:setup:all
 

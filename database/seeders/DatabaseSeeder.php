@@ -28,21 +28,27 @@ class DatabaseSeeder extends Seeder
         $rangeStart = now()->subMonths(12)->startOfDay();
         $rangeEnd = now();
 
-        $adminUser = User::create([
-            'name' => 'Admin User',
+        $adminUser = User::updateOrCreate([
             'email' => 'admin@example.com',
+        ], [
+            'name' => 'Admin User',
             'password' => Hash::make('admin'),
             'role' => 'admin',
         ]);
-        $this->assignModelTimestamps($adminUser, $this->randomMomentBetween($rangeStart, $rangeEnd), $rangeEnd);
+        if ($adminUser->wasRecentlyCreated) {
+            $this->assignModelTimestamps($adminUser, $this->randomMomentBetween($rangeStart, $rangeEnd), $rangeEnd);
+        }
 
-        $standardUser = User::create([
-            'name' => 'Standard User',
+        $standardUser = User::updateOrCreate([
             'email' => 'user@example.com',
+        ], [
+            'name' => 'Standard User',
             'password' => Hash::make('user'),
             'role' => 'user',
         ]);
-        $this->assignModelTimestamps($standardUser, $this->randomMomentBetween($rangeStart, $rangeEnd), $rangeEnd);
+        if ($standardUser->wasRecentlyCreated) {
+            $this->assignModelTimestamps($standardUser, $this->randomMomentBetween($rangeStart, $rangeEnd), $rangeEnd);
+        }
 
         User::factory(48)->create()->each(function (User $user) use ($rangeStart, $rangeEnd) {
             $this->assignModelTimestamps($user, $this->randomMomentBetween($rangeStart, $rangeEnd), $rangeEnd);
