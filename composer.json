@@ -40,9 +40,11 @@
             "@php artisan migrate --force"
         ],
         "herd:setup": [
+            "composer install --no-interaction",
             "@php artisan app:setup-herd"
         ],
         "herd:setup:all": [
+            "composer install --no-interaction",
             "@php artisan app:setup-herd",
             "npm --prefix frontend install"
         ],

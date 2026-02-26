@@ -84,12 +84,12 @@ class SetupHerdEnvironment extends Command
 
     private function ensurePassportPersonalClient(): void
     {
-        if (!Schema::hasTable('oauth_personal_access_clients')) {
-            $this->warn('• Passport tables not found yet. Run migrations first to create OAuth tables.');
+        if (!Schema::hasTable('oauth_clients')) {
+            $this->warn('• Passport client table not found yet. Run migrations first to create OAuth tables.');
             return;
         }
 
-        if (DB::table('oauth_personal_access_clients')->exists()) {
+        if (DB::table('oauth_clients')->where('name', 'Task Manager Personal Access Client')->exists()) {
             $this->line('• Passport personal access client already exists');
             return;
         }
@@ -97,6 +97,7 @@ class SetupHerdEnvironment extends Command
         $this->call('passport:client', [
             '--personal' => true,
             '--name' => 'Task Manager Personal Access Client',
+            '--provider' => config('auth.defaults.provider', 'users'),
             '--no-interaction' => true,
         ]);
     }

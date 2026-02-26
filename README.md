@@ -64,17 +64,19 @@ This project includes an idempotent Herd bootstrap command so reviewers can get 
 ### 2) Install backend dependencies
 
 - composer install
+- (optional) You can skip this if you run `composer run herd:setup` or `composer run herd:setup:all`, which now install backend dependencies automatically.
 
 ### 3) Run Herd bootstrap
 
 - composer run herd:setup
 
 What this does automatically:
+- installs backend Composer dependencies if missing
 - creates `.env` if missing
 - generates `APP_KEY` if missing
 - runs migrations
 - creates Passport keys if missing
-- creates a Passport personal access client if missing
+- creates a Passport personal access client if missing (non-interactive)
 - creates the storage symlink if missing
 
 ### 4) Install frontend dependencies
@@ -86,10 +88,24 @@ What this does automatically:
 - Backend API: php artisan serve
 - Frontend: npm --prefix frontend run dev
 
-Optional one-liner for steps 3 + 4:
+Optional one-liner for steps 2 + 3 + 4:
 - composer run herd:setup:all
 
 If your Node/OpenSSL setup is strict, npm --prefix frontend run build is also supported.
+
+## Pre-share checklist
+
+Before sharing with a reviewer or employer, run:
+
+- composer run herd:setup
+- composer run test
+- npm --prefix frontend install
+- npm --prefix frontend run build
+
+Expected outcome:
+- setup completes without prompts and can be re-run safely
+- backend tests pass
+- frontend build completes successfully
 
 ## Notes for reviewers and employers
 
@@ -100,6 +116,15 @@ If your Node/OpenSSL setup is strict, npm --prefix frontend run build is also su
   - focused feature and unit tests around task behavior
 - The frontend is deliberately basic and should be read as a functional API client, not as final UX quality.
 - The backend design and test coverage are a better signal of engineering direction than visual polish.
+
+## Current validation snapshot
+
+As of February 26, 2026:
+
+- Backend tests pass via `composer run test`.
+- Frontend production build succeeds via `npm --prefix frontend run build`.
+- Frontend build currently reports non-blocking warnings from legacy dashboard Sass usage and bundle-size hints.
+- `npm --prefix frontend install` reports dependency vulnerabilities in the template dependency tree; this is known and currently does not block local setup or build.
 
 ## Future improvements
 
