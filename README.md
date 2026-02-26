@@ -105,11 +105,7 @@ Optional one-liner for steps 2 + 3 + 4:
 
 If your Node/OpenSSL setup is strict, npm --prefix frontend run build is also supported.
 
-## Test accounts (seeded)
-
-`composer run herd:setup` now seeds these accounts automatically on first setup (or whenever they are not present).
-
-If you need to re-seed manually:
+## Test accounts & data (seeded)
 
 - php artisan db:seed
 
