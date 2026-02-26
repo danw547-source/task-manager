@@ -205,9 +205,6 @@ npm --prefix frontend run build
 ## Documentation
 
 - `CHANGES.md` — high-level change summary and next-commit plan
-- `SETUP.md` — setup and deployment details
-- `SERVICE_LAYER.md` — architecture notes
-- `QUICKSTART.md` — fast project bootstrap
 
 ## License
 
