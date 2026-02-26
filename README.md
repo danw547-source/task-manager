@@ -7,7 +7,7 @@ Task Manager is a Laravel API-first project with a companion dashboard frontend.
 - Backend is the primary focus and is functionally complete for core task flows.
 - Frontend exists and works for demonstration, but it is still **rudimentary** and intended mainly to showcase API integration.
 - API authentication and authorization are implemented with Passport, policies, and role middleware.
-- A Postman collection and environments are included for end-to-end API testing.
+- A Postman collection is included for end-to-end API testing.
 
 ## Tech Stack
 
@@ -51,10 +51,93 @@ See `routes/api.php` for the canonical endpoint map.
 Ready-to-import artifacts are available in `postman/`:
 
 - `task-manager-api.postman_collection.json`
-- `task-manager-local.postman_environment.json`
-- `task-manager-herd.postman_environment.json`
 
-## Quick Start
+Set a collection/environment variable such as `base_url` to your local API URL:
+
+- Herd: `https://task-manager.test/api/v1`
+- Artisan serve: `http://127.0.0.1:8000/api/v1`
+
+## Quick Start (Recommended: Herd)
+
+If you use Herd, this is the **recommended** and easiest local setup.
+
+### Prerequisites
+
+- Herd installed and running
+- PHP 8.2+ selected in Herd
+- Composer installed
+- Node.js + npm installed
+- MySQL available
+
+### 1) Place the project in your Herd directory
+
+If you downloaded this repo as a ZIP:
+
+1. Extract it.
+2. If the extracted folder is named `task-manager-main`, rename it to `task-manager`.
+3. Move the folder into your Herd projects directory (for example: `C:\Users\<you>\Herd\task-manager`).
+4. Open the folder in VS Code.
+
+This avoids extra filename/path tweaking and keeps the default Herd URL as `https://task-manager.test`.
+
+### 2) Install backend dependencies
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+```
+
+Update your `.env`:
+
+- `APP_URL=https://task-manager.test`
+- `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
+
+Create the database if it does not exist (example name used by `.env.example`):
+
+```sql
+CREATE DATABASE task_manager;
+```
+
+Then run migrations:
+
+```bash
+php artisan migrate
+```
+
+### 3) Link and open with Herd
+
+From the project root, ensure the app is linked in Herd:
+
+```bash
+herd link
+```
+
+Then open:
+
+- `https://task-manager.test`
+
+If the domain does not resolve, re-link the folder in Herd and verify Herd is running.
+
+### 4) Install and run frontend
+
+```bash
+npm --prefix frontend install
+npm --prefix frontend run dev
+```
+
+### 5) Postman + quick API test
+
+Import `postman/task-manager-api.postman_collection.json` and set `base_url`
+to `https://task-manager.test/api/v1`.
+
+Quick verification flow:
+
+1. `POST /auth/register`
+2. `POST /auth/login`
+3. Use the returned bearer token for authenticated endpoints (for example, `GET /tasks`)
+
+## Quick Start (Alternative: artisan serve)
 
 ### 1) Backend setup
 
