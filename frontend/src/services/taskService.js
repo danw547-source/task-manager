@@ -46,19 +46,6 @@ export async function unfollowTask(taskId) {
   });
 }
 
-export async function setTaskReaction(taskId, reaction) {
-  await request(`/tasks/${taskId}/reaction`, {
-    method: "PUT",
-    body: JSON.stringify({ reaction }),
-  });
-}
-
-export async function clearTaskReaction(taskId) {
-  await request(`/tasks/${taskId}/reaction`, {
-    method: "DELETE",
-  });
-}
-
 export async function getTaskComments(taskId, params = { page: 1, per_page: 10 }) {
   const query = new URLSearchParams(params).toString();
   const payload = await request(`/tasks/${taskId}/comments?${query}`);

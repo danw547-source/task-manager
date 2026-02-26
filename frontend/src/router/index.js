@@ -26,7 +26,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (publicOnly && authed) {
-    return next({ name: "tasks" });
+    return next({ name: "home" });
   }
 
   return next();

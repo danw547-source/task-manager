@@ -29,7 +29,7 @@
       <div v-if="title" class="title">
         <b>{{ title }}<br /></b>
       </div>
-      <div v-if="message" v-html="message"></div>
+      <div v-if="message">{{ message }}</div>
       <content-render
         v-if="!message && component"
         :component="component"

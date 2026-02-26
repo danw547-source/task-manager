@@ -11,6 +11,7 @@ class TaskEngagementPersistenceTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Smoke test proving a normal user can create a task and it is persisted with correct owner.
     public function test_task_creation_is_persisted(): void
     {
         /** @var User $actor */
@@ -32,6 +33,7 @@ class TaskEngagementPersistenceTest extends TestCase
         ]);
     }
 
+    // Ensures follow edges are written to the pivot table used by follow-based filtering.
     public function test_follow_action_is_persisted(): void
     {
         /** @var User $owner */
@@ -52,6 +54,7 @@ class TaskEngagementPersistenceTest extends TestCase
         ]);
     }
 
+    // Verifies comment writes hit storage so conversation threads can be rebuilt after reload.
     public function test_comment_action_is_persisted(): void
     {
         /** @var User $owner */

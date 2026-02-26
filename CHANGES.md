@@ -1,91 +1,63 @@
 # Changes Log
 
-This document summarizes the current state of the project and the most relevant recent updates.
+This file tracks project-level changes and the current engineering direction.
 
 ## Current Snapshot (February 2026)
 
-- Backend API is the primary stable surface.
-- Frontend is functional but **rudimentary** and intended mainly for demonstration.
-- Auth, authorization, and engagement flows are wired and testable through API endpoints.
-- Postman exports are included for quick API verification.
+- Backend API is stable for core task and engagement workflows.
+- Frontend is functional but still intentionally rudimentary.
+- Role behavior is now more complete for real-world use:
+  - non-admin users can browse all tasks
+  - ownership and follow boundaries are enforced in actions
+  - task scope filters support all, owned, and following views
 
-## Recent Completed Work
+## Recent updates
 
-### 1) API testing artifacts
+### Task filtering and ownership behavior
+- Added first-class scope filtering for task lists: all, owned, following.
+- Preserved legacy mine query compatibility while moving toward scope as the primary contract.
+- Ensured owner filtering is available to all authenticated users through user options endpoint support.
 
-- Added import-ready Postman collection:
-  - `postman/task-manager-api.postman_collection.json`
-- Added environments:
-  - `postman/task-manager-local.postman_environment.json`
-  - `postman/task-manager-herd.postman_environment.json`
-- Included token capture flow and request defaults for easier endpoint testing.
+### Role-based UX and action controls
+- Non-admin users can complete their own tasks.
+- Users cannot follow their own tasks in the UI.
+- Non-admin users can still follow or unfollow and comment on tasks they do not own.
 
-### 2) API guest handling fix
+### Architecture and consistency improvements
+- Added dedicated request validation for task list queries.
+- Moved viewer-specific follow-state enrichment into service orchestration.
+- Kept repositories focused on persistence and query concerns.
+- Extracted task-comment presentation helpers from the larger task list page into shared utilities.
 
-- Updated bootstrap guest redirect behavior for API/JSON requests.
-- Result: unauthenticated API calls no longer fail by trying to redirect to a non-existent web login route.
+### Documentation and maintainability
+- Added and refreshed natural code comments in core backend and frontend files.
+- Added intent comments in tests so future reviewers understand why each test exists.
+- Updated top-level docs to match current behavior and limitations.
 
-### 3) Admin user-management authorization fix
+## Known limitations
 
-- Added explicit abilities in `UserPolicy` for:
-  - `viewAny`, `view`, `create`, `update`, `delete`
-- Result: admin-only Users endpoints now authorize correctly via policy checks.
+1) Frontend maturity
+- The dashboard UI is still basic and should be treated as a functional API client.
+- It demonstrates behavior correctly, but visual polish and UX depth are limited.
 
-### 4) Task engagement usage confirmation
+2) Frontend stack age
+- Vue 2 + Vue CLI is workable but not modern by current ecosystem standards.
 
-- Confirmed `TaskEngagementService` is actively used in backend controllers.
-- Confirmed engagement-related data is consumed by frontend service/views.
+3) Coverage depth
+- Core task behavior is covered, but additional scenarios around auth lifecycle and analytics are still worthwhile.
 
-### 5) Documentation/comment pass in Laravel layers
+## Suggested next improvements
 
-- Added concise class-level comments across:
-  - Controllers
-  - Services
-  - Repositories + interfaces
-  - Requests
-  - Policies
-  - Middleware
-  - Models
-- Goal: make code intent and Laravel pattern usage easier to scan for maintainers.
+### Technical quality
+- Add CI automation for tests and linting.
+- Expand feature tests for auth edge cases and dashboard aggregation behavior.
+- Continue removing legacy compatibility branches once all clients use scope-only filtering.
 
-### 6) Docs refresh
+### Frontend evolution
+- Decompose large page components further.
+- Improve loading and empty states across dashboard modules.
+- Decide and document a migration path to Vue 3 + Vite, or formally defer it with rationale.
 
-- Rewrote `README.md` and `CHANGES.md` to reflect the actual current stack/state.
-- Corrected outdated assumptions (framework versions, frontend maturity claims, and status wording).
-
-## Known Limitations
-
-1. Frontend quality level
-   - Current UI is suitable for demonstrating API behavior, not polished product UX.
-
-2. Stack consistency
-   - Frontend stack is still Vue 2 + Vue CLI template-era structure.
-
-3. Test depth
-   - Additional end-to-end/feature coverage is still needed for critical auth/admin/engagement paths.
-
-## Proposed Improvements/Fixes for Next Commit
-
-1. **Frontend reliability pass**
-   - Tighten loading/error/empty states.
-   - Remove stale styles/components and reduce template debt.
-
-2. **Authentication UX hardening**
-   - Standardize token lifecycle handling in frontend service layer.
-   - Improve unauthorized/session-expired recovery behavior.
-
-3. **API test expansion**
-   - Add focused feature tests for:
-     - admin user management
-     - engagement comments/read receipts
-     - reminder scheduling behavior
-
-4. **CI and quality gates**
-   - Add lint + test workflow automation on PRs.
-   - Fail fast on policy/route regressions.
-
-5. **Frontend modernization decision**
-   - Create a migration plan (or explicit deferral decision) for Vue 3 + Vite.
-
-6. **Ops/dev ergonomics**
-   - Improve docs around local run caveats (ports/OpenSSL/workflow) and one-command dev startup guidance.
+### Operational readiness
+- Add clearer queue and reminder observability.
+- Improve contributor docs for local setup variations and troubleshooting.

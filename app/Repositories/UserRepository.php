@@ -19,6 +19,14 @@ class UserRepository implements UserRepositoryInterface
             ->get();
     }
 
+    public function options()
+    {
+        return User::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
+    }
+
     public function find($id)
     {
         return User::find($id);

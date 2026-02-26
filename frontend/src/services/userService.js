@@ -26,6 +26,6 @@ function normalizeUsers(payload) {
 }
 
 export async function getUsers() {
-  const payload = await request("/users");
+  const payload = await request("/users/options");
   return normalizeUsers(payload);
 }

@@ -1,90 +1,98 @@
 <template>
   <div class="space-y-4 lg:space-y-5">
     <div class="tasks-toolbar mb-4 rounded-2xl px-5 py-4 shadow-sm backdrop-blur-sm">
-      <div>
-        <h3 class="mb-1 text-white font-semibold tracking-tight">Task Workspace</h3>
-        <p class="text-muted mb-0 text-sm">Track priorities, review updates, and manage work in one place.</p>
-      </div>
-      <div class="tasks-toolbar-actions gap-3">
-        <user-filter-select
-          v-model="selectedUserId"
-          :is-admin="isAdmin"
-          all-label="All users"
-          storage-key="taskflow_tasks_selected_user"
-          class="mr-0 mb-0"
-          @change="onTaskUserSelectionChange"
-        />
-        <base-button
-          type="default"
-          class="tasks-create-btn mb-0 text-white bg-brand box-border border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-full text-sm px-4 py-2.5 focus:outline-none"
-          @click="openCreateDialog"
-        >
-          New Task
-        </base-button>
+      <div class="tasks-toolbar-top">
+        <div>
+          <h3 class="mb-1 text-white font-semibold tracking-tight">Task Workspace</h3>
+          <p class="text-muted mb-0 text-sm">Track priorities, review updates, and manage work in one place.</p>
+        </div>
+        <div class="tasks-toolbar-actions">
+          <div class="tasks-toolbar-control">
+            <span class="tasks-toolbar-label">Scope</span>
+            <div class="task-view-toggle" role="group" aria-label="Task scope filter">
+              <button
+                type="button"
+                class="task-view-toggle-btn"
+                :class="{ 'is-active': selectedTaskScope === 'all' }"
+                @click="setTaskScope('all')"
+              >
+                All
+              </button>
+              <button
+                type="button"
+                class="task-view-toggle-btn"
+                :class="{ 'is-active': selectedTaskScope === 'owned' }"
+                @click="setTaskScope('owned')"
+              >
+                I Own
+              </button>
+              <button
+                type="button"
+                class="task-view-toggle-btn"
+                :class="{ 'is-active': selectedTaskScope === 'following' }"
+                @click="setTaskScope('following')"
+              >
+                I Follow
+              </button>
+            </div>
+          </div>
+
+          <div class="tasks-toolbar-control">
+            <span class="tasks-toolbar-label">View</span>
+            <div class="task-view-toggle" role="group" aria-label="Task view mode">
+              <button
+                type="button"
+                class="task-view-toggle-btn"
+                :class="{ 'is-active': selectedTaskView === 'outstanding' }"
+                @click="selectedTaskView = 'outstanding'"
+              >
+                Outstanding
+              </button>
+              <button
+                type="button"
+                class="task-view-toggle-btn"
+                :class="{ 'is-active': selectedTaskView === 'completed' }"
+                @click="selectedTaskView = 'completed'"
+              >
+                Completed
+              </button>
+            </div>
+          </div>
+
+          <div class="tasks-toolbar-control">
+            <span class="tasks-toolbar-label">Owner</span>
+            <user-filter-select
+              v-model="selectedUserId"
+              :is-admin="isAdmin"
+              all-label="All users"
+              storage-key="taskflow_tasks_selected_user"
+              class="mr-0 mb-0"
+              @change="onTaskUserSelectionChange"
+            />
+          </div>
+
+          <base-button
+            type="default"
+            class="tasks-create-btn mb-0 text-white bg-brand box-border border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-full text-sm px-4 py-2.5 focus:outline-none"
+            @click="openCreateDialog"
+          >
+            New Task
+          </base-button>
+        </div>
       </div>
     </div>
 
-    <modal
+    <task-form-modal
       :show.sync="showCreateDialog"
-      type="notice"
-      :show-close="true"
-      :centered="true"
-      modal-classes="modal-2x"
-      modal-content-classes="bg-dark"
-    >
-      <template slot="header">
-        <h4 class="modal-title text-white mb-0">Create New Task</h4>
-      </template>
-
-      <div class="row">
-        <div class="col-md-8">
-          <base-input
-            label="Title"
-            type="text"
-            placeholder="Task title"
-            v-model="createForm.title"
-            required
-          />
-        </div>
-        <div class="col-md-4">
-          <base-input
-            label="Due Date"
-            type="date"
-            v-model="createForm.due_date"
-            :min="todayDateString"
-            required
-          />
-        </div>
-      </div>
-
-      <base-input
-        label="Description"
-        type="textarea"
-        placeholder="Short details about this task"
-        v-model="createForm.description"
-        required
-      />
-
-      <div class="text-danger" v-if="createError">{{ createError }}</div>
-
-      <template slot="footer">
-        <base-button
-          type="default"
-          class="text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-full text-sm px-4 py-2.5 focus:outline-none"
-          @click="showCreateDialog = false"
-        >
-          Cancel
-        </base-button>
-        <base-button
-          type="default"
-          class="text-white bg-brand box-border border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-full text-sm px-4 py-2.5 focus:outline-none"
-          :disabled="creating"
-          @click="submitTask"
-        >
-          {{ creating ? "Creating..." : "Create Task" }}
-        </base-button>
-      </template>
-    </modal>
+      title="Create New Task"
+      :form-data.sync="createForm"
+      :min-date="todayDateString"
+      :error-message="createError"
+      :submitting="creating"
+      submit-text="Create Task"
+      submitting-text="Creating..."
+      @submit="submitTask"
+    />
 
     <div class="row">
       <div class="col-lg-3 col-md-6" v-for="item in overviewCards" :key="item.label">
@@ -108,19 +116,21 @@
           <template slot="header">
             <div class="d-flex justify-content-between align-items-center outstanding-header py-1">
               <div>
-                <h6 class="title mb-1 text-white">Outstanding Tasks</h6>
-                <p class="card-category mb-0 text-slate-300/80">Open and in progress</p>
+                <h6 class="title mb-1 text-white">{{ selectedTaskTitle }}</h6>
+                <p class="card-category mb-0 text-slate-300/80">{{ selectedTaskSubtitle }}</p>
               </div>
-              <span class="outstanding-pill shadow-sm">{{ outstandingTasks }} active</span>
+              <span class="outstanding-pill shadow-sm">{{ selectedTaskCountLabel }}</span>
             </div>
           </template>
           <div class="table-full-width outstanding-tasks-wrap mt-1">
             <task-list
               ref="outstandingTaskList"
-              :outstanding-only="true"
+              :view-mode="selectedTaskView"
+              :task-scope="selectedTaskScope"
               :mine-only="shouldScopeToMine"
               :owner-user-id="selectedOwnerUserId"
               :per-page="30"
+              @tasks-changed="onTasksChanged"
             />
           </div>
         </card>
@@ -131,16 +141,18 @@
 
 <script>
 import TaskList from "@/pages/Dashboard/TaskList";
-import Modal from "@/components/Modal";
+import TaskFormModal from "@/components/TaskFormModal.vue";
 import UserFilterSelect from "@/components/UserFilterSelect.vue";
 import { createTask, getTasks } from "@/services/taskService";
 import { getStoredUser } from "@/services/authService";
+import { getTodayDateString, validateTaskForm } from "@/utils/taskForm";
+import { notify } from "@/utils/notify";
 
 export default {
   name: "tasks-page",
   components: {
     TaskList,
-    Modal,
+    TaskFormModal,
     UserFilterSelect,
   },
   data() {
@@ -156,25 +168,23 @@ export default {
       },
       allTasks: [],
       selectedUserId: 0,
+      loadOverviewRequestVersion: 0,
+      selectedTaskView: "outstanding",
+      selectedTaskScope: "all",
     };
   },
   computed: {
     todayDateString() {
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = `${today.getMonth() + 1}`.padStart(2, "0");
-      const day = `${today.getDate()}`.padStart(2, "0");
-
-      return `${year}-${month}-${day}`;
+      return getTodayDateString();
     },
     isAdmin() {
       return this.currentUser?.role === "admin";
     },
     shouldScopeToMine() {
-      return !this.isAdmin;
+      return false;
     },
     selectedOwnerUserId() {
-      if (!this.isAdmin || !this.selectedUserId) {
+      if (!this.selectedUserId) {
         return 0;
       }
 
@@ -192,10 +202,9 @@ export default {
     pendingTasks() {
       return this.allTasks.filter((task) => task.status === "pending").length;
     },
-    dueSoonTasks() {
+    overdueTasks() {
       const today = new Date();
-      const inThreeDays = new Date();
-      inThreeDays.setDate(today.getDate() + 3);
+      today.setHours(0, 0, 0, 0);
 
       return this.allTasks.filter((task) => {
         if (!task.due_date || task.status === "done") {
@@ -203,12 +212,32 @@ export default {
         }
 
         const dueDate = new Date(task.due_date);
+        if (Number.isNaN(dueDate.getTime())) {
+          return false;
+        }
 
-        return dueDate >= today && dueDate <= inThreeDays;
+        dueDate.setHours(0, 0, 0, 0);
+
+        return dueDate < today;
       }).length;
     },
     outstandingTasks() {
       return this.totalTasks - this.completedTasks;
+    },
+    selectedTaskCountLabel() {
+      if (this.selectedTaskView === "completed") {
+        return `${this.completedTasks} completed`;
+      }
+
+      return `${this.outstandingTasks} active`;
+    },
+    selectedTaskTitle() {
+      return this.selectedTaskView === "completed" ? "Completed Tasks" : "Outstanding Tasks";
+    },
+    selectedTaskSubtitle() {
+      return this.selectedTaskView === "completed"
+        ? "Finished work"
+        : "Open and in progress";
     },
     overviewCards() {
       return [
@@ -228,8 +257,8 @@ export default {
           icon: "tim-icons icon-check-2 text-success",
         },
         {
-          label: "Due in 3 Days",
-          value: this.dueSoonTasks,
+          label: "Overdue",
+          value: this.overdueTasks,
           icon: "tim-icons icon-calendar-60 text-info",
         },
       ];
@@ -250,7 +279,29 @@ export default {
         await this.$refs.outstandingTaskList.loadTasks();
       }
     },
+    async setTaskScope(scope) {
+      if (this.selectedTaskScope === scope) {
+        return;
+      }
+
+      this.selectedTaskScope = scope;
+      // Scope changes can make a previously selected owner filter feel confusing,
+      // so we reset owner to "All users" for a clean mental model.
+      this.selectedUserId = 0;
+
+      await this.loadOverviewTasks();
+      if (this.$refs.outstandingTaskList?.loadTasks) {
+        await this.$refs.outstandingTaskList.loadTasks();
+      }
+    },
+    async onTasksChanged() {
+      await this.loadOverviewTasks();
+    },
     async loadOverviewTasks() {
+      // Version guard prevents stale responses from slower requests from
+      // overwriting newer filter/scope selections.
+      const requestVersion = ++this.loadOverviewRequestVersion;
+
       try {
         const collected = [];
         let page = 1;
@@ -260,6 +311,7 @@ export default {
           const { data, pagination } = await getTasks({
             page,
             per_page: 50,
+            scope: this.selectedTaskScope,
             mine: this.shouldScopeToMine ? 1 : 0,
             ...(this.selectedOwnerUserId ? { user_id: this.selectedOwnerUserId } : {}),
           });
@@ -269,45 +321,32 @@ export default {
           page += 1;
         } while (page <= lastPage);
 
+        if (requestVersion !== this.loadOverviewRequestVersion) {
+          return;
+        }
+
         this.allTasks = collected;
       } catch (error) {
+        if (requestVersion !== this.loadOverviewRequestVersion) {
+          return;
+        }
+
         this.allTasks = [];
       }
     },
-    async submitTask() {
+    async submitTask(submittedForm = this.createForm) {
       this.createError = "";
-      const title = this.createForm.title.trim();
-      const description = this.createForm.description.trim();
-      const dueDate = this.createForm.due_date;
 
-      if (!title) {
-        this.createError = "Task title is required.";
-        return;
-      }
-
-      if (!description) {
-        this.createError = "Task description is required.";
-        return;
-      }
-
-      if (!dueDate) {
-        this.createError = "Task due date is required.";
-        return;
-      }
-
-      if (dueDate < this.todayDateString) {
-        this.createError = "Task due date cannot be in the past.";
+      const validation = validateTaskForm(submittedForm, this.todayDateString);
+      if (!validation.valid) {
+        this.createError = validation.error;
         return;
       }
 
       this.creating = true;
 
       try {
-        await createTask({
-          title,
-          description,
-          due_date: dueDate,
-        });
+        await createTask(validation.payload);
 
         this.createForm = {
           title: "",
@@ -322,11 +361,7 @@ export default {
 
         await this.loadOverviewTasks();
 
-        this.$notify({
-          type: "success",
-          message: "Task created successfully.",
-          timeout: 2500,
-        });
+        notify(this, { type: "success", message: "Task created successfully.", timeout: 2500 });
       } catch (error) {
         this.createError = error.message || "Unable to create task.";
       } finally {
@@ -340,21 +375,87 @@ export default {
 <style scoped>
 .tasks-toolbar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.85rem;
   padding: 1rem 1.15rem;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
 }
 
+.tasks-toolbar-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
 .tasks-toolbar-actions {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  align-items: flex-end;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 0.6rem;
+}
+
+.tasks-toolbar-control {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tasks-toolbar-label {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.58);
+  font-weight: 700;
+}
+
+.task-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.task-view-toggle-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.task-view-toggle-btn.is-active {
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+@media (max-width: 768px) {
+  .tasks-toolbar-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tasks-toolbar-actions {
+    width: 100%;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
+  .tasks-toolbar-control {
+    width: 100%;
+  }
+
+  .tasks-create-btn {
+    width: 100%;
+  }
 }
 
 .tasks-create-btn {
@@ -380,8 +481,21 @@ export default {
 }
 
 .outstanding-tasks-wrap {
+  flex: 1 1 auto;
   overflow-x: hidden;
+  overflow-y: auto;
+  max-height: none;
+  min-height: 0;
   margin-top: 2px;
+}
+
+.outstanding-card ::v-deep .table-full-width {
+  max-height: none !important;
+  height: 100%;
+}
+
+.outstanding-card ::v-deep .task-table-wrap {
+  height: 100%;
 }
 
 .outstanding-tasks-wrap ::v-deep .table {
@@ -444,10 +558,14 @@ export default {
   border: 1px solid rgba(255, 255, 255, 0.05);
   background: rgba(255, 255, 255, 0.02);
   min-height: calc(100vh - 220px);
+  display: flex;
+  flex-direction: column;
 }
 
 .outstanding-card ::v-deep .card-body {
   min-height: calc(100vh - 290px);
+  display: flex;
+  flex-direction: column;
 }
 
 .outstanding-header .title {

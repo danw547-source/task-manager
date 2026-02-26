@@ -19,6 +19,11 @@ class UserService
         return $this->userRepo->all();
     }
 
+    public function options()
+    {
+        return $this->userRepo->options();
+    }
+
     public function find($id)
     {
         return $this->userRepo->find($id);

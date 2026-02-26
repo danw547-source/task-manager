@@ -20,6 +20,13 @@ class UserController extends Controller
     {
     }
 
+    public function options()
+    {
+        $users = $this->userService->options();
+
+        return $this->successResponse($users, 'User options retrieved successfully');
+    }
+
     public function index()
     {
         // Even though route middleware already limits this to admins,

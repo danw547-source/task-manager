@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Http\Requests\Task\ListTasksRequest;
 use App\Http\Requests\Task\ReorderTasksRequest;
 use App\Http\Requests\Task\SetReminderRequest;
 use App\Http\Requests\Task\StoreTaskRequest;
@@ -22,28 +23,39 @@ class TaskController extends Controller
     {
     }
 
-    public function index()
+    public function index(ListTasksRequest $request)
     {
         $this->authorize('viewAny', Task::class);
 
-        $actor = request()->user();
+        $payload = $request->validated();
+
+        $actor = $request->user();
         $viewerId = $actor?->id;
-        $mine = filter_var(request()->query('mine', false), FILTER_VALIDATE_BOOLEAN);
-        $requestedUserId = max(0, (int) request()->query('user_id', 0));
+        $mine = (bool) ($payload['mine'] ?? false);
+        $requestedUserId = (int) ($payload['user_id'] ?? 0);
+        $scope = (string) ($payload['scope'] ?? 'all');
+
+        // Keep backward compatibility with older clients that still send `mine=1`.
+        // Newer clients use `scope=owned` directly.
+        if ($mine) {
+            $scope = 'owned';
+        }
 
         $ownerId = null;
+        // `mine` takes precedence over arbitrary user_id so the intent is explicit.
         if ($mine) {
             $ownerId = $viewerId ? (int) $viewerId : null;
-        } elseif ($actor?->isAdmin() && $requestedUserId > 0) {
+        } elseif ($requestedUserId > 0) {
             $ownerId = $requestedUserId;
         }
 
         $paginated = $this->taskService->all(
-            request()->query('status'),
-            max(1, (int) request()->query('page', 1)),
-            max(1, min(50, (int) request()->query('per_page', 12))),
+            $payload['status'] ?? null,
+            (int) ($payload['page'] ?? 1),
+            (int) ($payload['per_page'] ?? 12),
             $viewerId ? (int) $viewerId : null,
-            $ownerId
+            $ownerId,
+            $scope
         );
 
         return $this->paginatedResponse($paginated);

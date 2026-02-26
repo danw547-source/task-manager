@@ -21,10 +21,10 @@ class AuthController extends Controller
     /**
      * Registers a new account with the default `user` role.
      *
-     * CSRF safety rationale:
-     * - API mutations are authenticated via bearer tokens in Authorization headers.
-     * - Browsers do not auto-attach Authorization headers in cross-site form posts,
-     *   unlike cookie-based session flows.
+        * Passport in plain terms:
+        * - When a user logs in or registers, Passport creates an access token for that user.
+        * - The frontend stores that token and sends it as `Authorization: Bearer <token>`.
+        * - Protected routes use `auth:api` to read that token and identify the user.
      */
 
     public function register(RegisterRequest $request)

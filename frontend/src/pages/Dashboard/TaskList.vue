@@ -30,7 +30,7 @@
                 <span class="task-sort-indicator">{{ sortIndicator('due_date') }}</span>
               </button>
             </th>
-            <th class="task-col-actions">Actions</th>
+            <th v-if="!isReadOnlyView" class="task-col-actions">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -46,7 +46,7 @@
             <td>{{ task.creator_name }}</td>
             <td>{{ formatCreatedDate(task.created_at) }}</td>
             <td>{{ formatDueDate(task.due_date) }}</td>
-            <td class="task-col-actions" @click.stop>
+            <td v-if="!isReadOnlyView" class="task-col-actions" @click.stop>
               <div class="task-compact-actions">
                 <base-button
                   v-if="canManageTask(task)"
@@ -86,7 +86,10 @@
       <template slot="header">
         <div v-if="activeTask" class="w-100">
           <h4 class="modal-title text-white mb-1 tracking-tight">{{ activeTask.title }}</h4>
-          <p class="text-muted mb-0 text-sm">Created by {{ activeTask.creator_name }} on {{ formatCreatedDate(activeTask.created_at) }}</p>
+          <div class="task-header-meta text-muted text-sm">
+            <span v-if="isReadOnlyView" class="task-readonly-badge">Read-only</span>
+            <span>Created by {{ activeTask.creator_name }} on {{ formatCreatedDate(activeTask.created_at) }}</span>
+          </div>
         </div>
       </template>
 
@@ -98,8 +101,9 @@
           <span class="task-meta-pill">Due: {{ formatDueDate(activeTask.due_date) }}</span>
         </div>
 
-        <div class="mt-2 d-flex align-items-center flex-wrap">
+        <div v-if="!isReadOnlyView" class="mt-2 d-flex align-items-center flex-wrap">
           <base-button
+            v-if="canToggleFollow(activeTask)"
             type="info"
             size="sm"
             class="mr-2 mb-2"
@@ -110,7 +114,7 @@
           </base-button>
 
           <base-button
-            v-if="isAdmin && !activeTask.done"
+            v-if="canCompleteTask(activeTask)"
             type="success"
             size="sm"
             class="mr-2 mb-2"
@@ -122,14 +126,16 @@
 
         <div class="mt-3">
           <h6 class="mb-2">Conversation</h6>
-          <base-input
-            placeholder="Write a comment..."
-            v-model="commentDrafts[activeTask.id]"
-          />
-          <div class="d-flex justify-content-end">
-            <base-button size="sm" type="primary" @click="submitComment(activeTask)">
-              Comment
-            </base-button>
+          <div v-if="!isReadOnlyView">
+            <base-input
+              placeholder="Write a comment..."
+              v-model="commentDrafts[activeTask.id]"
+            />
+            <div class="d-flex justify-content-end">
+              <base-button size="sm" type="primary" @click="submitComment(activeTask)">
+                Comment
+              </base-button>
+            </div>
           </div>
 
           <div
@@ -153,7 +159,7 @@
                   </div>
                   <div class="comment-bubble">{{ comment.body }}</div>
 
-                  <div class="comment-actions">
+                  <div v-if="!isReadOnlyView" class="comment-actions">
                     <button class="comment-action-btn" type="button" @click="toggleReplyBox(activeTask.id, comment.id)">
                       Reply
                     </button>
@@ -198,100 +204,36 @@
       </div>
     </modal>
 
-    <modal
+    <task-form-modal
       :show.sync="showEditDialog"
-      type="notice"
-      :show-close="true"
-      :centered="true"
-      modal-classes="modal-2x"
-      modal-content-classes="bg-dark"
-    >
-      <template slot="header">
-        <h4 class="modal-title text-white mb-0">Edit Task</h4>
-      </template>
+      title="Edit Task"
+      :form-data.sync="editForm"
+      :min-date="todayDateString"
+      :due-date-readonly="true"
+      due-date-input-type="text"
+      :error-message="editError"
+      :submitting="editing"
+      submit-text="Save"
+      submitting-text="Saving..."
+      @submit="confirmEditTask"
+      @cancel="closeEditDialog"
+    />
 
-      <base-input
-        label="Title"
-        type="text"
-        placeholder="Task title"
-        v-model="editForm.title"
-        required
-      />
-
-      <base-input
-        label="Description"
-        type="textarea"
-        placeholder="Task description"
-        v-model="editForm.description"
-        required
-      />
-
-      <base-input
-        label="Due Date"
-        type="date"
-        v-model="editForm.due_date"
-        :min="todayDateString"
-        required
-      />
-
-      <p v-if="editError" class="text-danger mb-0">{{ editError }}</p>
-
-      <template slot="footer">
-        <base-button
-          type="default"
-          class="text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-full text-sm px-4 py-2.5 focus:outline-none"
-          @click="closeEditDialog"
-        >
-          Cancel
-        </base-button>
-        <base-button
-          type="default"
-          class="text-white bg-brand box-border border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-full text-sm px-4 py-2.5 focus:outline-none"
-          :disabled="editing"
-          @click="confirmEditTask"
-        >
-          {{ editing ? "Saving..." : "Save" }}
-        </base-button>
-      </template>
-    </modal>
-
-    <modal
+    <confirm-dialog
       :show.sync="showDeleteDialog"
-      type="notice"
-      :show-close="true"
-      :centered="true"
-      modal-content-classes="bg-dark"
-    >
-      <template slot="header">
-        <h4 class="modal-title text-white mb-0">Delete Task</h4>
-      </template>
-
-      <p class="text-muted mb-0" v-if="taskPendingDelete">
-        Delete "{{ taskPendingDelete.title }}"? This action cannot be undone.
-      </p>
-
-      <template slot="footer">
-        <base-button
-          type="default"
-          class="text-body bg-neutral-secondary-medium box-border border border-default-medium hover:bg-neutral-tertiary-medium hover:text-heading focus:ring-4 focus:ring-neutral-tertiary shadow-xs font-medium leading-5 rounded-full text-sm px-4 py-2.5 focus:outline-none"
-          @click="closeDeleteDialog"
-        >
-          Cancel
-        </base-button>
-        <base-button
-          type="danger"
-          class="text-white bg-danger box-border border border-transparent hover:bg-danger-strong focus:ring-4 focus:ring-danger-medium shadow-xs font-medium leading-5 rounded-full text-sm px-4 py-2.5 focus:outline-none"
-          @click="confirmDeleteTask"
-        >
-          Delete
-        </base-button>
-      </template>
-    </modal>
+      title="Delete Task"
+      :message="deleteTaskMessage"
+      confirm-text="Delete"
+      @confirm="confirmDeleteTask"
+      @cancel="closeDeleteDialog"
+    />
   </div>
 </template>
 
 <script>
 import Modal from "@/components/Modal";
+import TaskFormModal from "@/components/TaskFormModal.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import {
   addTaskComment,
   deleteTask,
@@ -304,15 +246,35 @@ import {
   updateTask,
 } from "@/services/taskService";
 import { getStoredUser } from "@/services/authService";
+import {
+  formatDateForDisplay,
+  getTodayDateString,
+  normalizeDueDateForInput,
+  validateTaskForm,
+} from "@/utils/taskForm";
+import {
+  buildCommentTree,
+  commentAuthorName,
+  commentAvatarStyle,
+  commentInitial,
+  formatCommentTime,
+} from "@/utils/taskComments";
+import { notify } from "@/utils/notify";
 
 export default {
   components: {
     Modal,
+    TaskFormModal,
+    ConfirmDialog,
   },
   props: {
-    outstandingOnly: {
-      type: Boolean,
-      default: false,
+    viewMode: {
+      type: String,
+      default: "outstanding",
+    },
+    taskScope: {
+      type: String,
+      default: "all",
     },
     mineOnly: {
       type: Boolean,
@@ -352,6 +314,7 @@ export default {
       currentUser: null,
       sortKey: 'title',
       sortDirection: 'asc',
+      loadTasksRequestVersion: 0,
     };
   },
   computed: {
@@ -376,13 +339,16 @@ export default {
       const threaded = {};
 
       Object.entries(this.commentsByTask).forEach(([taskId, comments]) => {
-        threaded[taskId] = this.buildCommentTree(comments || []);
+        threaded[taskId] = buildCommentTree(comments || []);
       });
 
       return threaded;
     },
     isAdmin() {
       return this.currentUser?.role === "admin";
+    },
+    isReadOnlyView() {
+      return this.viewMode === "completed";
     },
     activeTask() {
       if (!this.selectedTaskId) {
@@ -391,13 +357,15 @@ export default {
 
       return this.tasks.find((task) => task.id === this.selectedTaskId) || null;
     },
-    todayDateString() {
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = `${today.getMonth() + 1}`.padStart(2, "0");
-      const day = `${today.getDate()}`.padStart(2, "0");
+    deleteTaskMessage() {
+      if (!this.taskPendingDelete) {
+        return "";
+      }
 
-      return `${year}-${month}-${day}`;
+      return `Delete "${this.taskPendingDelete.title}"? This action cannot be undone.`;
+    },
+    todayDateString() {
+      return getTodayDateString();
     },
   },
   async mounted() {
@@ -412,6 +380,12 @@ export default {
     }
   },
   watch: {
+    viewMode() {
+      this.loadTasks();
+    },
+    taskScope() {
+      this.loadTasks();
+    },
     mineOnly() {
       this.loadTasks();
     },
@@ -454,16 +428,28 @@ export default {
       return (task[sortKey] || '').toString().toLowerCase();
     },
     async loadTasks() {
+      const requestVersion = ++this.loadTasksRequestVersion;
+      // `taskScope` is the current API contract. `mineOnly` stays as a fallback
+      // for older call sites until they are fully migrated.
+      const scope = this.taskScope || (this.mineOnly ? "owned" : "all");
+
       try {
         const { data } = await getTasks({
           page: 1,
           per_page: this.perPage,
+          scope,
           mine: this.ownerUserId ? 0 : this.mineOnly ? 1 : 0,
           ...(this.ownerUserId ? { user_id: this.ownerUserId } : {}),
         });
-        const filteredTasks = this.outstandingOnly
-          ? data.filter((task) => task.status !== "done")
-          : data;
+
+        if (requestVersion !== this.loadTasksRequestVersion) {
+          // Ignore stale responses when user changes filters quickly.
+          return;
+        }
+
+        const filteredTasks = this.viewMode === "completed"
+          ? data.filter((task) => task.status === "done")
+          : data.filter((task) => task.status !== "done");
 
         this.tasks = filteredTasks.map((task) => ({
           id: task.id,
@@ -472,7 +458,7 @@ export default {
           created_at: task.created_at || null,
           title: task.title,
           description: task.description || "No description",
-          due_date: this.normalizeDueDateForInput(task.due_date),
+          due_date: normalizeDueDateForInput(task.due_date),
           status: task.status,
           done: task.status === "done",
           is_following: Boolean(task.is_following),
@@ -481,6 +467,10 @@ export default {
 
         await Promise.all(this.tasks.map((task) => this.loadComments(task.id)));
       } catch (error) {
+        if (requestVersion !== this.loadTasksRequestVersion) {
+          return;
+        }
+
         this.tasks = [];
       }
     },
@@ -493,7 +483,25 @@ export default {
         return false;
       }
 
+      if (this.isReadOnlyView) {
+        return false;
+      }
+
       return this.isAdmin || task.user_id === this.currentUser.id;
+    },
+    canCompleteTask(task) {
+      if (!task || task.done || this.isReadOnlyView) {
+        return false;
+      }
+
+      return this.canManageTask(task);
+    },
+    canToggleFollow(task) {
+      if (!task || !this.currentUser?.id || this.isReadOnlyView) {
+        return false;
+      }
+
+      return task.user_id !== this.currentUser.id;
     },
     formatStatus(status) {
       if (status === "in_progress") {
@@ -507,67 +515,10 @@ export default {
       return "Pending";
     },
     formatCreatedDate(value) {
-      if (!value) {
-        return "Unknown date";
-      }
-
-      try {
-        const parsed = new Date(value);
-        if (Number.isNaN(parsed.getTime())) {
-          return "Unknown date";
-        }
-
-        return new Intl.DateTimeFormat("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(parsed);
-      } catch (error) {
-        return "Unknown date";
-      }
+      return formatDateForDisplay(value, "Unknown date");
     },
     formatDueDate(value) {
-      if (!value) {
-        return "N/A";
-      }
-
-      try {
-        const parsed = new Date(value);
-        if (Number.isNaN(parsed.getTime())) {
-          return "N/A";
-        }
-
-        return new Intl.DateTimeFormat("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(parsed);
-      } catch (error) {
-        return "N/A";
-      }
-    },
-    normalizeDueDateForInput(value) {
-      if (!value) {
-        return "";
-      }
-
-      const stringValue = String(value);
-      const leadingIsoDate = stringValue.match(/^(\d{4}-\d{2}-\d{2})/);
-
-      if (leadingIsoDate) {
-        return leadingIsoDate[1];
-      }
-
-      const parsed = new Date(value);
-      if (Number.isNaN(parsed.getTime())) {
-        return "";
-      }
-
-      const year = parsed.getFullYear();
-      const month = String(parsed.getMonth() + 1).padStart(2, "0");
-      const day = String(parsed.getDate()).padStart(2, "0");
-
-      return `${year}-${month}-${day}`;
+      return formatDateForDisplay(value, "N/A");
     },
     async loadComments(taskId) {
       try {
@@ -578,27 +529,27 @@ export default {
       }
     },
     async toggleFollow(task) {
+      if (!this.canToggleFollow(task)) {
+        return;
+      }
+
       if (task.is_following) {
         await unfollowTask(task.id);
         task.is_following = false;
         task.followers_count = Math.max(0, (task.followers_count || 0) - 1);
-        this.$notify({
-          type: "warning",
-          message: `You unfollowed "${task.title}".`,
-          timeout: 2200,
-        });
+        notify(this, { type: "warning", message: `You unfollowed "${task.title}".`, timeout: 2200 });
       } else {
         await followTask(task.id);
         task.is_following = true;
         task.followers_count = (task.followers_count || 0) + 1;
-        this.$notify({
-          type: "success",
-          message: `You are now following "${task.title}".`,
-          timeout: 2200,
-        });
+        notify(this, { type: "success", message: `You are now following "${task.title}".`, timeout: 2200 });
       }
     },
     async submitComment(task) {
+      if (this.isReadOnlyView) {
+        return;
+      }
+
       const body = (this.commentDrafts[task.id] || "").trim();
 
       if (!body) {
@@ -620,6 +571,10 @@ export default {
       this.$set(this.commentsByTask, task.id, [created, ...existing]);
     },
     async submitReply(task, parentComment) {
+      if (this.isReadOnlyView) {
+        return;
+      }
+
       const key = this.replyDraftKey(task.id, parentComment.id);
       const body = (this.replyDrafts[key] || "").trim();
 
@@ -644,19 +599,23 @@ export default {
       this.$set(this.activeReplyTo, task.id, null);
     },
     async markComplete(task) {
+      if (!this.canCompleteTask(task)) {
+        return;
+      }
+
       try {
         await updateTask(task.id, { status: "done" });
-        task.done = true;
-        task.status = "done";
-        this.$notify({
-          type: "success",
-          message: `Task "${task.title}" marked as complete.`,
-          timeout: 2500,
-        });
+        await this.loadTasks();
+        this.$emit("tasks-changed");
+        notify(this, { type: "success", message: `Task "${task.title}" marked as complete.`, timeout: 2500 });
       } catch (error) {
       }
     },
     openEditDialog(task) {
+      if (this.isReadOnlyView) {
+        return;
+      }
+
       if (!this.canManageTask(task)) {
         return;
       }
@@ -666,7 +625,7 @@ export default {
         id: task.id,
         title: task.title,
         description: task.description,
-        due_date: this.normalizeDueDateForInput(task.due_date),
+        due_date: normalizeDueDateForInput(task.due_date),
       };
       this.showEditDialog = true;
     },
@@ -680,28 +639,17 @@ export default {
         due_date: "",
       };
     },
-    async confirmEditTask() {
-      const title = (this.editForm.title || "").trim();
-      const description = (this.editForm.description || "").trim();
-      const dueDate = this.editForm.due_date;
-
-      if (!title) {
-        this.editError = "Task title is required.";
+    async confirmEditTask(submittedForm = this.editForm) {
+      if (this.isReadOnlyView) {
         return;
       }
 
-      if (!description) {
-        this.editError = "Task description is required.";
-        return;
-      }
-
-      if (!dueDate) {
-        this.editError = "Task due date is required.";
-        return;
-      }
-
-      if (dueDate < this.todayDateString) {
-        this.editError = "Task due date cannot be in the past.";
+      const validation = validateTaskForm(submittedForm, this.todayDateString, {
+        requireDueDate: false,
+        includeDueDateInPayload: false,
+      });
+      if (!validation.valid) {
+        this.editError = validation.error;
         return;
       }
 
@@ -709,25 +657,20 @@ export default {
       this.editError = "";
 
       try {
-        await updateTask(this.editForm.id, {
-          title,
-          description,
-          due_date: dueDate,
+        await updateTask(submittedForm.id, {
+          ...validation.payload,
         });
 
-        const task = this.tasks.find((entry) => entry.id === this.editForm.id);
+        const task = this.tasks.find((entry) => entry.id === submittedForm.id);
         if (task) {
-          task.title = title;
-          task.description = description;
-          task.due_date = dueDate;
+          task.title = validation.payload.title;
+          task.description = validation.payload.description;
         }
 
         this.closeEditDialog();
-        this.$notify({
-          type: "success",
-          message: "Task updated successfully.",
-          timeout: 2300,
-        });
+        await this.loadTasks();
+        this.$emit("tasks-changed");
+        notify(this, { type: "success", message: "Task updated successfully.", timeout: 2300 });
       } catch (error) {
         this.editError = error.message || "Unable to update task.";
       } finally {
@@ -735,6 +678,10 @@ export default {
       }
     },
     openDeleteDialog(task) {
+      if (this.isReadOnlyView) {
+        return;
+      }
+
       if (!this.canManageTask(task)) {
         return;
       }
@@ -747,6 +694,10 @@ export default {
       this.taskPendingDelete = null;
     },
     async confirmDeleteTask() {
+      if (this.isReadOnlyView) {
+        return;
+      }
+
       const task = this.taskPendingDelete;
 
       if (!task) {
@@ -755,21 +706,15 @@ export default {
 
       try {
         await deleteTask(task.id);
-        this.tasks = this.tasks.filter((entry) => entry.id !== task.id);
-        this.$delete(this.commentsByTask, task.id);
-        this.$delete(this.commentDrafts, task.id);
-
         if (this.selectedTaskId === task.id) {
           this.showTaskDialog = false;
           this.selectedTaskId = null;
         }
 
         this.closeDeleteDialog();
-        this.$notify({
-          type: "warning",
-          message: `Task "${task.title}" deleted.`,
-          timeout: 2500,
-        });
+        await this.loadTasks();
+        this.$emit("tasks-changed");
+        notify(this, { type: "warning", message: `Task "${task.title}" deleted.`, timeout: 2500 });
       } catch (error) {
       }
     },
@@ -780,7 +725,7 @@ export default {
         this.unreadTotal = unread.total_unread || 0;
 
         if (this.unreadTotal > previousUnread) {
-          this.$notify({
+          notify(this, {
             type: "info",
             message: `You have ${this.unreadTotal} unread task message(s).`,
             icon: "tim-icons icon-bell-55",
@@ -806,36 +751,16 @@ export default {
       return comment?.user?.id === this.currentUser.id;
     },
     commentAuthorName(comment) {
-      return comment?.user?.name || "User";
+      return commentAuthorName(comment);
     },
     commentInitial(comment) {
-      const name = this.commentAuthorName(comment).trim();
-
-      return name ? name.charAt(0).toUpperCase() : "U";
+      return commentInitial(comment);
     },
     commentAvatarStyle(comment) {
-      const seed = this.commentAuthorName(comment);
-      const palette = ["#1d8cf8", "#e14eca", "#00f2c3", "#ff8d72", "#fd5d93", "#11cdef"];
-
-      const index = [...seed].reduce((acc, char) => acc + char.charCodeAt(0), 0) % palette.length;
-
-      return {
-        backgroundColor: palette[index],
-      };
+      return commentAvatarStyle(comment);
     },
     formatCommentTime(comment) {
-      if (!comment?.created_at) {
-        return "Now";
-      }
-
-      try {
-        return new Date(comment.created_at).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-      } catch (error) {
-        return "Now";
-      }
+      return formatCommentTime(comment);
     },
     replyDraftKey(taskId, commentId) {
       return `${taskId}:${commentId}`;
@@ -861,29 +786,6 @@ export default {
           inputElement.focus();
         }
       });
-    },
-    buildCommentTree(comments) {
-      const sorted = [...comments].sort((first, second) => first.id - second.id);
-      const byId = new Map();
-
-      sorted.forEach((comment) => {
-        byId.set(comment.id, {
-          ...comment,
-          replies: [],
-        });
-      });
-
-      const roots = [];
-
-      byId.forEach((comment) => {
-        if (comment.parent_comment_id && byId.has(comment.parent_comment_id)) {
-          byId.get(comment.parent_comment_id).replies.push(comment);
-        } else {
-          roots.push(comment);
-        }
-      });
-
-      return roots;
     },
   },
 };
@@ -998,6 +900,26 @@ export default {
   color: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
+}
+
+.task-readonly-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.18rem 0.62rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.task-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
 }
 
 .comment-thread {

@@ -8,12 +8,13 @@ use PHPUnit\Framework\TestCase;
 
 class TaskServiceTest extends TestCase
 {
+    // Service should pass filter arguments through unchanged to repository query layer.
     public function test_it_gets_all_tasks_with_optional_status(): void
     {
         $repo = $this->createMock(TaskRepositoryInterface::class);
         $repo->expects($this->once())
             ->method('all')
-            ->with('pending', 1, 12)
+            ->with('pending', 1, 12, null, null, 'all')
             ->willReturn([]);
 
         $service = new TaskService($repo);
@@ -21,6 +22,7 @@ class TaskServiceTest extends TestCase
         $this->assertSame([], $service->all('pending', 1, 12));
     }
 
+    // Reorder is orchestration-only in service and must delegate directly.
     public function test_it_reorders_tasks(): void
     {
         $repo = $this->createMock(TaskRepositoryInterface::class);

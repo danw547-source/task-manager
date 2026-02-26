@@ -6,7 +6,15 @@ namespace App\Repositories;
  * This keeps the service layer independent from Eloquent specifics.
  */
 interface TaskRepositoryInterface {
-    public function all(?string $status = null, int $page = 1, int $perPage = 12, ?int $viewerId = null, ?int $ownerId = null);
+    public function all(
+        ?string $status = null,
+        int $page = 1,
+        int $perPage = 12,
+        ?int $viewerId = null,
+        ?int $ownerId = null,
+        string $scope = 'all'
+    );
+    public function followingTaskIds(int $userId, array $taskIds): array;
     public function find($id);
     public function create(array $data);
     public function update($id, array $data);

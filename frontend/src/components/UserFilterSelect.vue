@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isAdmin" class="user-filter-select">
+  <div class="user-filter-select">
     <select
       v-model.number="internalValue"
       class="form-control form-control-sm"
@@ -53,33 +53,12 @@ export default {
         this.internalValue = Number(next || 0);
       },
     },
-    isAdmin: {
-      immediate: true,
-      handler(next) {
-        if (next) {
-          this.loadUsers();
-          return;
-        }
-
-        if (!next && this.storageKey) {
-          localStorage.removeItem(this.storageKey);
-        }
-      },
-    },
   },
   async mounted() {
     await this.loadUsers();
   },
   methods: {
     async loadUsers() {
-      if (!this.isAdmin) {
-        this.users = [];
-        this.internalValue = 0;
-        this.emitSelection();
-        this.$emit("users-loaded", []);
-        return;
-      }
-
       try {
         const rawUsers = await getUsers();
         this.users = rawUsers
@@ -114,7 +93,7 @@ export default {
     emitSelection() {
       const nextValue = Number(this.internalValue || 0);
 
-      if (this.storageKey && this.isAdmin) {
+      if (this.storageKey) {
         localStorage.setItem(this.storageKey, String(nextValue));
       }
 

@@ -72,7 +72,7 @@ export default {
 
       try {
         await register(this.form);
-        this.$router.push({ name: "tasks" });
+        this.$router.push({ name: "home" });
       } catch (error) {
         this.errorMessage = error.message || "Unable to create account.";
       } finally {

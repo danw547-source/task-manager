@@ -21,10 +21,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('task_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('parent_comment_id')->nullable()->constrained('task_comments')->nullOnDelete();
             $table->text('body');
             $table->timestamps();
 
             $table->index(['task_id', 'created_at']);
+            $table->index(['task_id', 'parent_comment_id', 'created_at']);
         });
 
         Schema::create('task_comment_receipts', function (Blueprint $table) {

@@ -39,6 +39,13 @@
             "@php artisan key:generate",
             "@php artisan migrate --force"
         ],
+        "herd:setup": [
+            "@php artisan app:setup-herd"
+        ],
+        "herd:setup:all": [
+            "@php artisan app:setup-herd",
+            "npm --prefix frontend install"
+        ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" --names=server,queue,logs --kill-others"

@@ -30,17 +30,13 @@ const routes = [
     children: [
       {
         path: "",
-        redirect: "/tasks",
+        name: "home",
+        component: Tasks,
       },
       {
         path: "dashboard",
         name: "dashboard",
         component: Dashboard,
-      },
-      {
-        path: "tasks",
-        name: "tasks",
-        component: Tasks,
       },
     ],
   },

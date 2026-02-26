@@ -56,7 +56,7 @@ export default {
 
       try {
         await login(this.form);
-        this.$router.push({ name: "tasks" });
+        this.$router.push({ name: "home" });
       } catch (error) {
         this.errorMessage = error.message || "Unable to sign in.";
       } finally {

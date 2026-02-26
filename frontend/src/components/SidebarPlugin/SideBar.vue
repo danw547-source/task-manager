@@ -176,8 +176,8 @@ export default {
       } catch (error) {
       } finally {
         await this.loadUnreadSummary();
-        if (this.$route.path !== "/tasks") {
-          this.$router.push({ name: "tasks" });
+        if (this.$route.path !== "/") {
+          this.$router.push({ name: "home" });
         }
       }
     },

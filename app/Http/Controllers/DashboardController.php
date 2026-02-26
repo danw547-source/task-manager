@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Dashboard\SummaryRequest;
 use App\Services\DashboardService;
 use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
 
 /**
  * Returns dashboard analytics endpoints.
@@ -18,18 +18,14 @@ class DashboardController extends Controller
     {
     }
 
-    public function summary(Request $request)
+    public function summary(SummaryRequest $request)
     {
-        $months = max(1, min(24, (int) $request->query('months', 12)));
-        $ownerId = null;
+        $payload = $request->validated();
 
-        if ($request->user()?->isAdmin() && $request->filled('user_id')) {
-            $payload = $request->validate([
-                'user_id' => 'required|integer|exists:users,id',
-            ]);
-
-            $ownerId = (int) $payload['user_id'];
-        }
+        $months = (int) ($payload['months'] ?? 12);
+        $ownerId = $request->user()?->isAdmin() && isset($payload['user_id'])
+            ? (int) $payload['user_id']
+            : null;
 
         $summary = $this->dashboardService->summary($months, $ownerId);
 

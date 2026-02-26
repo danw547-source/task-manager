@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Task;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -11,6 +12,7 @@ class TaskControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Protects the basic list filtering contract used by the task table and dashboard cards.
     public function test_index_filters_tasks_by_status(): void
     {
         /** @var User $actor */
@@ -27,6 +29,7 @@ class TaskControllerTest extends TestCase
         $response->assertJsonPath('data.0.status', 'pending');
     }
 
+    // Confirms admins can explicitly assign ownership during creation.
     public function test_store_creates_task_with_assigned_user(): void
     {
         /** @var User $actor */
@@ -51,6 +54,7 @@ class TaskControllerTest extends TestCase
         ]);
     }
 
+    // Captures core creation validation: task content is required and due dates cannot be in the past.
     public function test_store_requires_description_and_due_date_and_rejects_past_due_date(): void
     {
         /** @var User $actor */
@@ -74,6 +78,7 @@ class TaskControllerTest extends TestCase
         $responsePastDate->assertJsonValidationErrors(['due_date']);
     }
 
+    // Verifies drag/drop ordering persists as explicit position values.
     public function test_reorder_updates_task_positions(): void
     {
         /** @var User $actor */
@@ -95,7 +100,8 @@ class TaskControllerTest extends TestCase
         $this->assertDatabaseHas('tasks', ['id' => $taskB->id, 'position' => 3]);
     }
 
-    public function test_update_changes_task_title_description_and_due_date(): void
+    // Due date is intentionally immutable after creation; edit flow only changes title/description.
+    public function test_update_changes_task_title_and_description_without_changing_due_date(): void
     {
         /** @var User $owner */
         $owner = User::factory()->create(['role' => 'admin']);
@@ -108,19 +114,16 @@ class TaskControllerTest extends TestCase
 
         $this->actingAs($owner, 'api');
 
-        $newDueDate = now()->addDays(5)->toDateString();
+        $existingDueDate = (string) $task->due_date;
 
         $response = $this->putJson("/api/v1/tasks/{$task->id}", [
             'title' => 'Updated title',
             'description' => 'Updated description',
-            'due_date' => $newDueDate,
         ]);
 
         $response->assertOk();
         $response->assertJsonPath('data.title', 'Updated title');
         $response->assertJsonPath('data.description', 'Updated description');
-        $responseDueDate = (string) data_get($response->json(), 'data.due_date', '');
-        $this->assertSame($newDueDate, substr($responseDueDate, 0, 10));
 
         $this->assertDatabaseHas('tasks', [
             'id' => $task->id,
@@ -128,13 +131,12 @@ class TaskControllerTest extends TestCase
             'description' => 'Updated description',
         ]);
 
-        $this->assertDatabaseHas('tasks', [
-            'id' => $task->id,
-            'due_date' => $newDueDate . ' 00:00:00',
-        ]);
+        $task->refresh();
+        $this->assertSame(substr($existingDueDate, 0, 10), optional($task->due_date)->format('Y-m-d'));
     }
 
-    public function test_update_rejects_invalid_due_date_format_and_past_due_date(): void
+    // Guards the immutable due-date rule at the API boundary.
+    public function test_update_rejects_due_date_changes(): void
     {
         /** @var User $owner */
         $owner = User::factory()->create(['role' => 'admin']);
@@ -142,21 +144,103 @@ class TaskControllerTest extends TestCase
 
         $this->actingAs($owner, 'api');
 
-        $invalidFormat = $this->putJson("/api/v1/tasks/{$task->id}", [
-            'due_date' => '12/31/2026',
-        ]);
-
-        $invalidFormat->assertStatus(422);
-        $invalidFormat->assertJsonValidationErrors(['due_date']);
-
-        $pastDate = $this->putJson("/api/v1/tasks/{$task->id}", [
+        $response = $this->putJson("/api/v1/tasks/{$task->id}", [
             'due_date' => now()->subDay()->toDateString(),
         ]);
 
-        $pastDate->assertStatus(422);
-        $pastDate->assertJsonValidationErrors(['due_date']);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['due_date']);
     }
 
+    // Normal users should still be able to browse by owner, even without admin privileges.
+    public function test_non_admin_can_filter_tasks_by_owner_user_id(): void
+    {
+        /** @var User $actor */
+        $actor = User::factory()->create(['role' => 'user']);
+        $ownerA = User::factory()->create();
+        $ownerB = User::factory()->create();
+
+        $this->actingAs($actor, 'api');
+
+        Task::factory()->create(['user_id' => $ownerA->id, 'title' => 'Owner A task']);
+        Task::factory()->create(['user_id' => $ownerB->id, 'title' => 'Owner B task']);
+
+        $response = $this->getJson("/api/v1/tasks?user_id={$ownerA->id}");
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.user_id', $ownerA->id);
+    }
+
+    // Owners are treated as following by default so frontend can rely on one follow-state flag.
+    public function test_owner_is_marked_as_following_by_default_in_task_list(): void
+    {
+        /** @var User $owner */
+        $owner = User::factory()->create(['role' => 'user']);
+        $task = Task::factory()->create(['user_id' => $owner->id]);
+
+        $this->actingAs($owner, 'api');
+
+        $response = $this->getJson('/api/v1/tasks');
+
+        $response->assertOk();
+        $response->assertJsonFragment([
+            'id' => $task->id,
+            'is_following' => true,
+        ]);
+    }
+
+    // Scope=owned should be strict and only include tasks created by the current user.
+    public function test_scope_owned_returns_only_current_users_tasks(): void
+    {
+        /** @var User $owner */
+        $owner = User::factory()->create(['role' => 'user']);
+        /** @var User $other */
+        $other = User::factory()->create(['role' => 'user']);
+
+        Task::factory()->create(['user_id' => $owner->id, 'title' => 'Mine']);
+        Task::factory()->create(['user_id' => $other->id, 'title' => 'Not mine']);
+
+        $this->actingAs($owner, 'api');
+
+        $response = $this->getJson('/api/v1/tasks?scope=owned');
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.user_id', $owner->id);
+    }
+
+    // Scope=following is explicit follows only; owned tasks are intentionally excluded.
+    public function test_scope_following_returns_only_explicitly_followed_non_owned_tasks(): void
+    {
+        /** @var User $viewer */
+        $viewer = User::factory()->create(['role' => 'user']);
+        /** @var User $owner */
+        $owner = User::factory()->create(['role' => 'user']);
+
+        $ownedTask = Task::factory()->create(['user_id' => $viewer->id, 'title' => 'Owned task']);
+        $followedTask = Task::factory()->create(['user_id' => $owner->id, 'title' => 'Followed task']);
+        $notFollowedTask = Task::factory()->create(['user_id' => $owner->id, 'title' => 'Not followed']);
+
+        DB::table('task_follows')->insert([
+            'task_id' => $followedTask->id,
+            'user_id' => $viewer->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($viewer, 'api');
+
+        $response = $this->getJson('/api/v1/tasks?scope=following');
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonMissing(['id' => $ownedTask->id]);
+        $response->assertJsonMissing(['id' => $notFollowedTask->id]);
+        $response->assertJsonPath('data.0.id', $followedTask->id);
+    }
+
+    // Prevents privilege escalation where a non-admin attempts to assign tasks to someone else.
     public function test_store_ignores_user_id_for_non_admin_and_uses_actor_id(): void
     {
         /** @var User $actor */

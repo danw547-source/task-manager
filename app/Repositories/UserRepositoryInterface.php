@@ -9,6 +9,7 @@ namespace App\Repositories;
 interface UserRepositoryInterface
 {
     public function all();
+    public function options();
     public function find($id);
     public function create(array $data);
     public function update($id, array $data);

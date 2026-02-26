@@ -22,10 +22,10 @@ class TaskEngagementController extends Controller
     }
 
     /**
-     * Uses the current Passport user (`auth:api`) to follow a task.
+        * Uses the currently authenticated API user to follow a task.
      *
      * Follows are stored as a many-to-many relation, and the repository uses
-     * `syncWithoutDetaching()` so repeated follow requests remain safe and idempotent.
+        * `syncWithoutDetaching()` so repeated follow requests do not create duplicates.
      */
     public function follow(Request $request, Task $task)
     {
@@ -37,7 +37,7 @@ class TaskEngagementController extends Controller
     }
 
     /**
-     * Removes the current user's follow edge from the task.
+        * Removes the current user's follow relationship from the task.
      */
     public function unfollow(Request $request, Task $task)
     {
@@ -48,11 +48,12 @@ class TaskEngagementController extends Controller
     }
 
     /**
-     * Stores a task comment and fan-outs unread receipts to task owner + followers.
+        * Stores a task comment and creates unread receipts for the task owner and followers.
      *
-     * CSRF note: these API endpoints are guarded by Passport bearer tokens (`auth:api`) and do
-     * not rely on browser session cookies; because the Authorization header is explicitly set by
-     * our frontend API client, cross-site form submissions cannot silently invoke these mutations.
+        * Passport note: this API uses access tokens (via `auth:api`) instead of session cookies.
+        * After login/register, the client sends `Authorization: Bearer <token>` on each request.
+        * Browsers do not add this header automatically on cross-site form posts, which is why
+        * these token-based endpoints are not exposed the same way cookie-based endpoints are.
      */
     public function comment(CommentTaskRequest $request, Task $task)
     {

@@ -1,211 +1,123 @@
 # Task Manager
 
-Task Manager is a Laravel API-first project with a companion dashboard frontend.
+Task Manager is an API-first Laravel project with a lightweight Vue dashboard.
 
-## Current State (February 2026)
+The backend is the strongest part of the project and contains the core business logic, validation, authorization, and persistence patterns. The frontend is intentionally very simple and still fairly rudimentary; it exists to demonstrate and exercise API workflows, not to represent a polished production UI.
 
-- Backend is the primary focus and is functionally complete for core task flows.
-- Frontend exists and works for demonstration, but it is still **rudimentary** and intended mainly to showcase API integration.
-- API authentication and authorization are implemented with Passport, policies, and role middleware.
-- A Postman collection is included for end-to-end API testing.
+## What the app does
 
-## Tech Stack
+- Manages tasks with ownership, due dates, status, reordering, and reminders.
+- Supports engagement features: follow or unfollow tasks, comments, threaded replies, and unread/read message tracking.
+- Applies role-aware behavior:
+  - admin users can manage all users and tasks
+  - non-admin users can still browse/filter all tasks, but only edit or delete their own tasks
+- Provides multi-scope task filtering for all user types:
+  - all tasks
+  - tasks I own
+  - tasks I follow
+
+## Current stack
 
 ### Backend
 - PHP 8.2+
 - Laravel 12
-- Laravel Passport (token auth)
-- Queue jobs for reminders/notifications
+- Laravel Passport for bearer-token auth
+- Queue jobs for reminders and notifications
 - MySQL or SQLite
 
 ### Frontend
-- Vue 2 (Vue CLI app under `frontend/`)
-- Dashboard template-based UI
+- Vue 2 (Vue CLI)
+- Dashboard-template styling
 
-## Architecture
+## Backend architecture at a glance
 
-The backend follows a layered structure:
+The API follows a layered Laravel structure:
 
-- `Controllers` handle HTTP and authorization orchestration
-- `Form Requests` validate input and return consistent API-friendly validation responses
-- `Services` coordinate use-cases
-- `Repositories` isolate query/persistence concerns
-- `Policies` + role middleware enforce access control
+- Controllers: HTTP entry points and policy checks
+- Form Requests: input validation and request-shape rules
+- Services: orchestration and use-case logic
+- Repositories: query and persistence operations
+- Policies + middleware: role and ownership authorization
 
-API routes are versioned under:
+Routes are versioned under /api/v1.
 
-- `/api/v1/*`
-
-## Key API Areas
+## Main API surfaces
 
 - Auth: register, login, me, logout
-- Tasks: CRUD, reorder, reminders
-- Task Engagement: follow/unfollow, comments, unread/read message state
-- Users (admin-only): CRUD
+- Tasks: list, create, update, delete, reorder, reminders
+- Engagement: follow, unfollow, comments, unread and mark-read endpoints
 - Dashboard summary
+- User options endpoint for task-owner filtering
+- Admin-only user CRUD
 
-See `routes/api.php` for the canonical endpoint map.
+See routes/api.php for the canonical endpoint map.
 
-## Postman Testing
+## Quick Start
 
-Ready-to-import artifacts are available in `postman/`:
+This project includes an idempotent Herd bootstrap command so reviewers can get running fast.
 
-- `task-manager-api.postman_collection.json`
+### 1) Clone and enter project
 
-Set a collection/environment variable such as `base_url` to your local API URL:
-
-- Herd: `https://task-manager.test/api/v1`
-- Artisan serve: `http://127.0.0.1:8000/api/v1`
-
-## Quick Start (Recommended: Herd)
-
-If you use Herd, this is the **recommended** and easiest local setup.
-
-### Prerequisites
-
-- Herd installed and running
-- PHP 8.2+ selected in Herd
-- Composer installed
-- Node.js + npm installed
-- MySQL available
-
-### 1) Place the project in your Herd directory
-
-If you downloaded this repo as a ZIP:
-
-1. Extract it.
-2. If the extracted folder is named `task-manager-main`, rename it to `task-manager`.
-3. Move the folder into your Herd projects directory (for example: `C:\Users\<you>\Herd\task-manager`).
-4. Open the folder in VS Code.
-
-This avoids extra filename/path tweaking and keeps the default Herd URL as `https://task-manager.test`.
+- Place the repo inside your Herd projects directory (for example `C:/Users/<you>/Herd/task-manager`).
+- Open terminal in the project root.
 
 ### 2) Install backend dependencies
 
-```bash
-composer install
-cp .env.example .env
-php artisan key:generate
-```
+- composer install
 
-Update your `.env`:
+### 3) Run Herd bootstrap
 
-- `APP_URL=https://task-manager.test`
-- `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
+- composer run herd:setup
 
-Create the database if it does not exist (example name used by `.env.example`):
+What this does automatically:
+- creates `.env` if missing
+- generates `APP_KEY` if missing
+- runs migrations
+- creates Passport keys if missing
+- creates a Passport personal access client if missing
+- creates the storage symlink if missing
 
-```sql
-CREATE DATABASE task_manager;
-```
+### 4) Install frontend dependencies
 
-Then run migrations:
+- npm --prefix frontend install
 
-```bash
-php artisan migrate
-```
+### 5) Run app
 
-### 3) Link and open with Herd
+- Backend API: php artisan serve
+- Frontend: npm --prefix frontend run dev
 
-From the project root, ensure the app is linked in Herd:
+Optional one-liner for steps 3 + 4:
+- composer run herd:setup:all
 
-```bash
-herd link
-```
+If your Node/OpenSSL setup is strict, npm --prefix frontend run build is also supported.
 
-Then open:
+## Notes for reviewers and employers
 
-- `https://task-manager.test`
+- The codebase has had several recent consistency improvements:
+  - dedicated task-list request validation
+  - clearer service vs repository responsibilities
+  - role-aware filtering and scope handling
+  - focused feature and unit tests around task behavior
+- The frontend is deliberately basic and should be read as a functional API client, not as final UX quality.
+- The backend design and test coverage are a better signal of engineering direction than visual polish.
 
-If the domain does not resolve, re-link the folder in Herd and verify Herd is running.
+## Future improvements
 
-### 4) Install and run frontend
+### Near-term
+- Add more feature tests for auth edge cases, dashboard summary scenarios, and reminder scheduling.
+- Add CI automation for linting and test execution.
+- Reduce remaining legacy compatibility paths after clients fully adopt scope-based filtering.
 
-```bash
-npm --prefix frontend install
-npm --prefix frontend run dev
-```
+### Mid-term
+- Split remaining large frontend components into smaller view modules.
+- Improve loading, error, and empty states in the dashboard UI.
+- Add structured logging around reminder dispatch and engagement events.
 
-### 5) Postman + quick API test
+### Longer-term
+- Decide on Vue modernization path (Vue 3 + Vite) or explicitly freeze Vue 2 with maintenance boundaries.
+- Improve cross-database portability in analytical dashboard queries.
 
-Import `postman/task-manager-api.postman_collection.json` and set `base_url`
-to `https://task-manager.test/api/v1`.
+## Supporting docs
 
-Quick verification flow:
-
-1. `POST /auth/register`
-2. `POST /auth/login`
-3. Use the returned bearer token for authenticated endpoints (for example, `GET /tasks`)
-
-## Quick Start (Alternative: artisan serve)
-
-### 1) Backend setup
-
-```bash
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate
-```
-
-### 2) Frontend setup
-
-```bash
-npm --prefix frontend install
-```
-
-### 3) Run backend
-
-```bash
-php artisan serve
-```
-
-### 4) Run frontend
-
-```bash
-npm --prefix frontend run dev
-```
-
-If your local Node/OpenSSL setup is strict, use:
-
-```bash
-npm --prefix frontend run build
-```
-
-(`build:app` already applies the legacy OpenSSL flag via script config.)
-
-## Important Notes
-
-- The frontend is intentionally simple and currently optimized for **demonstration**, not polished production UX.
-- API behavior and security boundaries should be treated as the source of truth.
-- Unauthenticated API requests are handled as API responses (no web login redirect).
-
-## Suggested Improvements for Next Commit
-
-1. **Frontend stabilization and cleanup**
-   - Remove dead styles/components and align naming conventions.
-   - Improve error/loading/empty states across task and engagement views.
-
-2. **Frontend modernization path**
-   - Decide whether to keep Vue 2 short-term or begin migration plan to Vue 3 + Vite.
-   - Consolidate duplicated UI patterns into reusable components.
-
-3. **Automated API coverage**
-   - Add/update feature tests for auth, admin user management, and engagement flows.
-   - Add CI checks for lint + tests.
-
-4. **Developer experience hardening**
-   - Add a single cross-platform `dev` workflow note (backend + frontend + queue).
-   - Document known local run caveats (ports, OpenSSL, environment assumptions).
-
-5. **Observability and safety improvements**
-   - Add structured logging around reminders/notifications.
-   - Add rate-limiting/auth hardening checks for critical endpoints.
-
-## Documentation
-
-- `CHANGES.md` — high-level change summary and next-commit plan
-
-## License
-
-MIT
+- CHANGES.md: current snapshot and notable updates
+- postman/task-manager-api.postman_collection.json: API request collection

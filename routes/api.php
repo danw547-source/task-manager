@@ -32,6 +32,7 @@ Route::prefix('v1')->group(function () {
     // Task Routes - RESTful resource routes
     Route::middleware('auth:api')->group(function () {
         Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+        Route::get('/users/options', [UserController::class, 'options']);
 
         Route::apiResource('tasks', TaskController::class);
 
