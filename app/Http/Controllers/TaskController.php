@@ -1,72 +1,128 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Http\Requests\Task\ReorderTasksRequest;
+use App\Http\Requests\Task\SetReminderRequest;
+use App\Http\Requests\Task\StoreTaskRequest;
+use App\Http\Requests\Task\UpdateTaskRequest;
+use App\Jobs\SendTaskReminderNotification;
+use App\Models\Task;
 use App\Services\TaskService;
-use Illuminate\Http\Request;
+use App\Traits\ApiResponse;
 
-// A controller should handle the request and return a response. It should not contain business logic or interact with the database directly. It should delegate those responsibilities to other classes, such as services or repositories. This keeps the controller thin and focused on its primary responsibility, which is to handle HTTP requests and responses.
-
+/**
+ * Handles task CRUD and task-specific actions.
+ * Uses requests + policies + service layer to keep HTTP, auth, and business logic separated.
+ */
 class TaskController extends Controller
 {
-    protected $taskService;
+    use ApiResponse;
 
-    public function __construct(TaskService $taskService) // To inject the TaskService into the controller, allowing it to handle business logic related to tasks. This promotes separation of concerns and keeps the controller thin. By using dependency injection, we can easily swap out the TaskService for a different implementation if needed, making our code more flexible and testable.
+    public function __construct(private readonly TaskService $taskService)
     {
-        $this->taskService = $taskService;
     }
 
     public function index()
     {
-        $status = request()->query('status');
-        $page = max(1, (int) request()->query('page', 1));
-        $perPage = max(1, min(50, (int) request()->query('per_page', 12)));
+        $this->authorize('viewAny', Task::class);
 
-        return response()->json($this->taskService->getAllTasks($status, $page, $perPage));
+        $actor = request()->user();
+        $viewerId = $actor?->id;
+        $mine = filter_var(request()->query('mine', false), FILTER_VALIDATE_BOOLEAN);
+        $requestedUserId = max(0, (int) request()->query('user_id', 0));
+
+        $ownerId = null;
+        if ($mine) {
+            $ownerId = $viewerId ? (int) $viewerId : null;
+        } elseif ($actor?->isAdmin() && $requestedUserId > 0) {
+            $ownerId = $requestedUserId;
+        }
+
+        $paginated = $this->taskService->all(
+            request()->query('status'),
+            max(1, (int) request()->query('page', 1)),
+            max(1, min(50, (int) request()->query('per_page', 12))),
+            $viewerId ? (int) $viewerId : null,
+            $ownerId
+        );
+
+        return $this->paginatedResponse($paginated);
     }
 
-    public function store(Request $request)
+    public function store(StoreTaskRequest $request)
     {
-        $request->validate(
-            [
-                'title' => 'required|string|max:255',
-                'description' => 'nullable|string',
-                'status' => 'nullable|in:pending,in_progress,done',
-                'due_date' => 'nullable|date',
-                'user_id' => 'nullable|exists:users,id',
-                'position' => 'nullable|integer|min:0',
-            
-            ]);
+        $this->authorize('create', Task::class);
 
-        return response()->json($this->taskService->createTask($request->all()));
+        $actor = $request->user();
+        $validated = $request->validated();
+
+        // Consistency rule: non-admin users can only create tasks for themselves.
+        if (!$actor?->isAdmin()) {
+            unset($validated['user_id']);
+            $validated['user_id'] = $actor?->id;
+        }
+
+        if (!isset($validated['user_id'])) {
+            $validated['user_id'] = $actor?->id;
+        }
+
+        $task = $this->taskService->create($validated);
+        return $this->successResponse($task, 'Task created successfully', 201);
     }
 
-    public function update(Request $request, $id)
+    public function show(Task $task)
     {
-        $request->validate([
-            'title' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'nullable|in:pending,in_progress,done',
-            'due_date' => 'nullable|date',
-            'user_id' => 'nullable|exists:users,id',
-            'position' => 'nullable|integer|min:0',
-        ]);
+        $this->authorize('view', $task);
 
-        return response()->json($this->taskService->updateTask($id, $request->all()));
+        return $this->successResponse($task, 'Task retrieved successfully');
     }
 
-    public function destroy($id)
+    public function update(UpdateTaskRequest $request, Task $task)
     {
-         return response()->json($this->taskService->deleteTask($id));
+        $this->authorize('update', $task);
+
+        $actor = $request->user();
+        $validated = $request->validated();
+
+        if (!$actor?->isAdmin()) {
+            unset($validated['user_id']);
+        }
+
+        $updatedTask = $this->taskService->update($task->id, $validated);
+        return $this->successResponse($updatedTask, 'Task updated successfully');
     }
 
-    public function reorder(Request $request)
+    public function destroy(Task $task)
     {
-        $payload = $request->validate([
-            'ordered_ids' => 'required|array|min:1',
-            'ordered_ids.*' => 'integer|exists:tasks,id',
-        ]);
+        $this->authorize('delete', $task);
 
-        return response()->json($this->taskService->reorderTasks($payload['ordered_ids']));
+        $this->taskService->delete($task->id);
+        return $this->successResponse(null, 'Task deleted successfully');
     }
 
+    public function reorder(ReorderTasksRequest $request)
+    {
+        $this->authorize('reorder', Task::class);
+
+        $payload = $request->validated();
+        $reordered = $this->taskService->reorder($payload['ordered_ids']);
+
+        return $this->successResponse($reordered, 'Tasks reordered successfully');
+    }
+
+    public function setReminder(SetReminderRequest $request, Task $task)
+    {
+        $this->authorize('setReminder', $task);
+
+        $payload = $request->validated();
+
+        SendTaskReminderNotification::dispatch($task)
+            ->delay(now()->addSeconds($payload['delay_seconds']));
+
+        return $this->successResponse(
+            ['delay_seconds' => $payload['delay_seconds']],
+            'Reminder set successfully',
+            201
+        );
+    }
 }

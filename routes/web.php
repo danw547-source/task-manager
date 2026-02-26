@@ -1,15 +1,18 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\TaskController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\BlogController;
 
-Route::view('/', 'app');
+// Favicon route - prevent 404s
+Route::get('/favicon.ico', function () {
+    return response()->file(public_path('favicon.ico'));
+});
 
-Route::get('/tasks', [TaskController::class, 'index']);
-Route::post('/tasks', [TaskController::class, 'store']);
-Route::post('/tasks/reorder', [TaskController::class, 'reorder']);
-Route::put('/tasks/{id}', [TaskController::class, 'update']);
-Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/posts/{task}', [BlogController::class, 'show'])->name('blog.show');
 
-Route::get('/users', [UserController::class, 'index']);
+Route::redirect('/', '/tasks');
+
+Route::get('/{any?}', function () {
+    return response()->file(public_path('app/index.html'));
+})->where('any', '^(?!blog(?:/|$)|posts(?:/|$)).*')->name('home');

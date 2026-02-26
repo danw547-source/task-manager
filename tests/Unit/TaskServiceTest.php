@@ -18,7 +18,7 @@ class TaskServiceTest extends TestCase
 
         $service = new TaskService($repo);
 
-        $this->assertSame([], $service->getAllTasks('pending', 1, 12));
+        $this->assertSame([], $service->all('pending', 1, 12));
     }
 
     public function test_it_reorders_tasks(): void
@@ -31,6 +31,6 @@ class TaskServiceTest extends TestCase
 
         $service = new TaskService($repo);
 
-        $this->assertSame([], $service->reorderTasks([3, 1, 2]));
+        $this->assertSame([], $service->reorder([3, 1, 2]));
     }
 }

@@ -4,36 +4,42 @@ namespace App\Services;
 
 use App\Repositories\TaskRepositoryInterface;
 
+/**
+ * Handles task operations used by controllers.
+ * This keeps business flow stable even when persistence details change.
+ */
 class TaskService
 {
-    protected $taskRepo; // TaskRepositoryInterface, because we want to use the interface, not the implementation
-
-    public function __construct(TaskRepositoryInterface $taskRepo)
+    public function __construct(private readonly TaskRepositoryInterface $taskRepo)
     {
-        $this->taskRepo = $taskRepo;
     }
 
-    public function getAllTasks(?string $status = null, int $page = 1, int $perPage = 12)
+    public function all(?string $status = null, int $page = 1, int $perPage = 12, ?int $viewerId = null, ?int $ownerId = null)
     {
-        return $this->taskRepo->all($status, $page, $perPage);
+        return $this->taskRepo->all($status, $page, $perPage, $viewerId, $ownerId);
     }
 
-    public function createTask($data)
+    public function find($id)
+    {
+        return $this->taskRepo->find($id);
+    }
+
+    public function create($data)
     {
         return $this->taskRepo->create($data);
     }
 
-    public function updateTask($id, $data)
+    public function update($id, $data)
     {
         return $this->taskRepo->update($id, $data);
     }
 
-    public function deleteTask($id)
+    public function delete($id)
     {
         return $this->taskRepo->delete($id);
     }
 
-    public function reorderTasks(array $orderedIds)
+    public function reorder(array $orderedIds)
     {
         return $this->taskRepo->reorder($orderedIds);
     }

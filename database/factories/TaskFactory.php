@@ -20,12 +20,27 @@ class TaskFactory extends Factory
     public function definition(): array
     {
         $status = fake()->randomElement(['pending', 'in_progress', 'done']);
-        $dueDate = fake()->boolean(75)
-            ? fake()->dateTimeBetween('-2 days', '+10 days')->format('Y-m-d')
-            : null;
+        $dueDate = fake()->dateTimeBetween('+1 day', '+14 days')->format('Y-m-d');
+        $title = fake()->randomElement([
+            'Review quarterly roadmap milestones',
+            'Prepare sprint planning notes',
+            'Validate release readiness checklist',
+            'Update API integration guide',
+            'Refine onboarding task sequence',
+            'Audit permission role mappings',
+            'Coordinate stakeholder feedback review',
+            'Finalize dashboard accessibility fixes',
+            'Reconcile backlog priority changes',
+            'Confirm deployment rollback steps',
+            'Document support handoff process',
+            'Plan customer follow-up actions',
+            'Review incident response timeline',
+            'Optimize task list query performance',
+            'Verify mobile form validation flows',
+        ]);
 
         return [
-            'title' => fake()->sentence(4),
+            'title' => $title,
             'description' => fake()->optional()->paragraph(),
             'status' => $status,
             'due_date' => $dueDate,

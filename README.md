@@ -1,59 +1,131 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Task Manager
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Task Manager is a Laravel API-first project with a companion dashboard frontend.
 
-## About Laravel
+## Current State (February 2026)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Backend is the primary focus and is functionally complete for core task flows.
+- Frontend exists and works for demonstration, but it is still **rudimentary** and intended mainly to showcase API integration.
+- API authentication and authorization are implemented with Passport, policies, and role middleware.
+- A Postman collection and environments are included for end-to-end API testing.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Backend
+- PHP 8.2+
+- Laravel 12
+- Laravel Passport (token auth)
+- Queue jobs for reminders/notifications
+- MySQL or SQLite
 
-## Learning Laravel
+### Frontend
+- Vue 2 (Vue CLI app under `frontend/`)
+- Dashboard template-based UI
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Architecture
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+The backend follows a layered structure:
 
-## Laravel Sponsors
+- `Controllers` handle HTTP and authorization orchestration
+- `Form Requests` validate input and return consistent API-friendly validation responses
+- `Services` coordinate use-cases
+- `Repositories` isolate query/persistence concerns
+- `Policies` + role middleware enforce access control
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+API routes are versioned under:
 
-### Premium Partners
+- `/api/v1/*`
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Key API Areas
 
-## Contributing
+- Auth: register, login, me, logout
+- Tasks: CRUD, reorder, reminders
+- Task Engagement: follow/unfollow, comments, unread/read message state
+- Users (admin-only): CRUD
+- Dashboard summary
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+See `routes/api.php` for the canonical endpoint map.
 
-## Code of Conduct
+## Postman Testing
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Ready-to-import artifacts are available in `postman/`:
 
-## Security Vulnerabilities
+- `task-manager-api.postman_collection.json`
+- `task-manager-local.postman_environment.json`
+- `task-manager-herd.postman_environment.json`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Quick Start
+
+### 1) Backend setup
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+```
+
+### 2) Frontend setup
+
+```bash
+npm --prefix frontend install
+```
+
+### 3) Run backend
+
+```bash
+php artisan serve
+```
+
+### 4) Run frontend
+
+```bash
+npm --prefix frontend run dev
+```
+
+If your local Node/OpenSSL setup is strict, use:
+
+```bash
+npm --prefix frontend run build
+```
+
+(`build:app` already applies the legacy OpenSSL flag via script config.)
+
+## Important Notes
+
+- The frontend is intentionally simple and currently optimized for **demonstration**, not polished production UX.
+- API behavior and security boundaries should be treated as the source of truth.
+- Unauthenticated API requests are handled as API responses (no web login redirect).
+
+## Suggested Improvements for Next Commit
+
+1. **Frontend stabilization and cleanup**
+   - Remove dead styles/components and align naming conventions.
+   - Improve error/loading/empty states across task and engagement views.
+
+2. **Frontend modernization path**
+   - Decide whether to keep Vue 2 short-term or begin migration plan to Vue 3 + Vite.
+   - Consolidate duplicated UI patterns into reusable components.
+
+3. **Automated API coverage**
+   - Add/update feature tests for auth, admin user management, and engagement flows.
+   - Add CI checks for lint + tests.
+
+4. **Developer experience hardening**
+   - Add a single cross-platform `dev` workflow note (backend + frontend + queue).
+   - Document known local run caveats (ports, OpenSSL, environment assumptions).
+
+5. **Observability and safety improvements**
+   - Add structured logging around reminders/notifications.
+   - Add rate-limiting/auth hardening checks for critical endpoints.
+
+## Documentation
+
+- `CHANGES.md` — high-level change summary and next-commit plan
+- `SETUP.md` — setup and deployment details
+- `SERVICE_LAYER.md` — architecture notes
+- `QUICKSTART.md` — fast project bootstrap
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT

@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@layer utilities {
+	.text-body {
+		color: rgba(226, 232, 240, 0.9);
+	}
+
+	.text-heading {
+		color: rgba(248, 250, 252, 0.98);
+	}
+
+	.bg-brand {
+		background-color: #c95ae2;
+	}
+
+	.hover\:bg-brand-strong:hover {
+		background-color: #b74ad0;
+	}
+
+	.focus\:ring-brand-medium:focus {
+		--tw-ring-color: rgba(201, 90, 226, 0.42);
+	}
+
+	.bg-neutral-secondary-medium {
+		background-color: rgba(51, 65, 85, 0.68);
+	}
+
+	.hover\:bg-neutral-tertiary-medium:hover {
+		background-color: rgba(71, 85, 105, 0.62);
+	}
+
+	.focus\:ring-neutral-tertiary:focus {
+		--tw-ring-color: rgba(100, 116, 139, 0.42);
+	}
+
+	.bg-neutral-primary-soft {
+		background-color: rgba(30, 41, 59, 0.55);
+	}
+
+	.hover\:bg-neutral-secondary-medium:hover {
+		background-color: rgba(51, 65, 85, 0.68);
+	}
+
+	.focus\:ring-neutral-tertiary-soft:focus {
+		--tw-ring-color: rgba(100, 116, 139, 0.3);
+	}
+
+	.border-default-medium {
+		border-color: rgba(148, 163, 184, 0.35);
+	}
+
+	.border-default {
+		border-color: rgba(148, 163, 184, 0.22);
+	}
+
+	.bg-success {
+		background-color: #10b981;
+	}
+
+	.hover\:bg-success-strong:hover {
+		background-color: #059669;
+	}
+
+	.focus\:ring-success-medium:focus {
+		--tw-ring-color: rgba(16, 185, 129, 0.42);
+	}
+
+	.bg-danger {
+		background-color: #ef4444;
+	}
+
+	.hover\:bg-danger-strong:hover {
+		background-color: #dc2626;
+	}
+
+	.focus\:ring-danger-medium:focus {
+		--tw-ring-color: rgba(239, 68, 68, 0.4);
+	}
+
+	.bg-warning {
+		background-color: #f59e0b;
+	}
+
+	.hover\:bg-warning-strong:hover {
+		background-color: #d97706;
+	}
+
+	.focus\:ring-warning-medium:focus {
+		--tw-ring-color: rgba(245, 158, 11, 0.42);
+	}
+
+	.bg-dark {
+		background-color: #111827;
+	}
+
+	.hover\:bg-dark-strong:hover {
+		background-color: #0f172a;
+	}
+
+	.shadow-xs {
+		box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.2);
+	}
+}

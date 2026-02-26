@@ -14,11 +14,14 @@
 /auth.json
 /node_modules
 /public/build
+/public/app
+/public/dashboard
 /public/hot
 /public/storage
 /storage/*.key
 /storage/pail
 /vendor
+/frontend/dist
 Homestead.json
 Homestead.yaml
 Thumbs.db
